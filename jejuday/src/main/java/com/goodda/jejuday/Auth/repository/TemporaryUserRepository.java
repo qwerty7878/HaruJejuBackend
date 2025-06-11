@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface TemporaryUserRepository extends JpaRepository<TemporaryUserRepository, Long> {
+public interface TemporaryUserRepository extends JpaRepository<TemporaryUser, Long> {
     Optional<TemporaryUser> findByEmail(String email);  // 인증
     boolean existsByEmail(String email);    //  중복확인
     void deleteByTemporaryUserId(Long temporaryUserId); //  수동 삭제
