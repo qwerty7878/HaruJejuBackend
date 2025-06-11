@@ -9,8 +9,12 @@ import java.util.Optional;
 
 public interface TemporaryUserService {
     void save(String email, String password, String name, Language language, Platform platform);    //  저장
+
     Optional<TemporaryUser> findByEmail(String email);  // 인증
+
     boolean existsByEmail(String email);    //  중복확인
+
     void deleteByTemporaryUserId(Long temporaryUserId); //  수동 삭제
+
     List<TemporaryUser> findByCreatedAtBefore(LocalDateTime time);  //  스케줄러
 }
