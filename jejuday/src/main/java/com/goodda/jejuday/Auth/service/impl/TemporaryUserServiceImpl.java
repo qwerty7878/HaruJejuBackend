@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,20 +18,26 @@ import org.springframework.stereotype.Service;
 public class TemporaryUserServiceImpl implements TemporaryUserService {
 
     private final TemporaryUserRepository temporaryUserRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
-    public void save(String name, String email, String password, Language language, Platform platform) {
+    public void save(Language language, Platform platform, String name, String email, String password) {
+
+        String encodedPassword = null;
+        if (platform != Platform.KAKAO && password != null && !password.isBlank()) {
+            encodedPassword = passwordEncoder.encode(password);
+        }
 
         if (temporaryUserRepository.existsByEmail(email)) {
             throw new DuplicateEmailException("이미 존재하는 이메일입니다.");
         }
 
         TemporaryUser temporaryUser = TemporaryUser.builder()
-                .name(name)
-                .email(email)
-                .password(password)
                 .language(language)
                 .platform(platform)
+                .name(name)
+                .email(email)
+                .password(encodedPassword)
                 .build();
         temporaryUserRepository.save(temporaryUser);
     }
