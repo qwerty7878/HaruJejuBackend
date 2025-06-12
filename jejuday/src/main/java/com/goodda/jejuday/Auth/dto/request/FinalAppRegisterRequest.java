@@ -14,7 +14,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FinalAppRegisterRequst {
+public class FinalAppRegisterRequest {
 
     private String email;
 
