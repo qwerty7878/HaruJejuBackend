@@ -14,6 +14,21 @@ import lombok.Setter;
 public class ApiResponse<T> {
     private boolean success;
     private String message;
-    private int statusCode;
     private T data;
+
+    public static <T> ApiResponse<T> onSuccess(T data) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .message("success")
+                .data(data)
+                .build();
+    }
+
+    public static <T> ApiResponse<T> onFailure(String message) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .data(null)
+                .build();
+    }
 }
