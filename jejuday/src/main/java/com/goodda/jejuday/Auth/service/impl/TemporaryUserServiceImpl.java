@@ -34,7 +34,7 @@ public class TemporaryUserServiceImpl implements TemporaryUserService {
 
         TemporaryUser temporaryUser = TemporaryUser.builder()
                 .language(language)
-                .platform(platform)
+                .platform(Platform.APP)
                 .name(name)
                 .email(email)
                 .password(encodedPassword)
