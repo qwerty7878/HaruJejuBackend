@@ -12,7 +12,7 @@ public interface EmailVerificationService {
 
     void saveVerificationForUser(User user, String code);
 
-    boolean verifyTemporaryUserCode(String email, String code, TemporaryUser temporaryUser);
+    boolean verifyTemporaryUserCode(String email, String code);
 
     boolean verifyUserCode(String email, String code);
 }

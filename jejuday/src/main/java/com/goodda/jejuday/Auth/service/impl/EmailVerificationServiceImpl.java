@@ -4,6 +4,7 @@ import com.goodda.jejuday.Auth.entity.EmailVerification;
 import com.goodda.jejuday.Auth.entity.TemporaryUser;
 import com.goodda.jejuday.Auth.entity.User;
 import com.goodda.jejuday.Auth.repository.EmailVerificationRepository;
+import com.goodda.jejuday.Auth.repository.TemporaryUserRepository;
 import com.goodda.jejuday.Auth.service.EmailVerificationService;
 import com.goodda.jejuday.Auth.util.exception.EmailSendingException;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     private final EmailVerificationRepository emailVerificationRepository;
+    private final TemporaryUserRepository temporaryUserRepository;
 
     @Override
     public void deleteVerificationByTemporaryUserEmail(String email) {
@@ -54,7 +56,10 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     }
 
     @Override
-    public boolean verifyTemporaryUserCode(String email, String code, TemporaryUser temporaryUser) {
+    public boolean verifyTemporaryUserCode(String email, String code) {
+        TemporaryUser temporaryUser = temporaryUserRepository.findByEmail(email)
+                .orElseThrow(() -> new EmailSendingException("임시 사용자가 존재하지 않습니다."));
+
         EmailVerification emailVerification = emailVerificationRepository.findTopByTemporaryUserAndIsVerifiedFalseOrderByCreatedAtDesc(
                         temporaryUser)
                 .orElseThrow(() -> new EmailSendingException("인증 기록이 없습니다."));
