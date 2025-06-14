@@ -5,11 +5,17 @@ import com.goodda.jejuday.Auth.entity.Language;
 import com.goodda.jejuday.Auth.entity.Platform;
 import com.goodda.jejuday.Auth.entity.User;
 import com.goodda.jejuday.Auth.entity.UserTheme;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Set;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
     User getUserByEmail(String email);
+    void setLoginCookie(HttpServletResponse response, String email);
+
+    boolean matchesPassword(String rawPassword, String encodedPassword);
+
+    void resetPassword(String email, String newPassword);
 
     User getUserByEmailOrNull(String email);
 
@@ -23,9 +29,9 @@ public interface UserService {
 
     void updateUserProfileImage(Long userId, String newProfileUrl);
 
-    void saveTemporaryUser(String email, String password, Platform platform, Language language);
+    void saveTemporaryUser(String name, String email, String password, Platform platform, Language language);
 
-    void completeFinalRegistration(String email, String nickname, String profile, Set<UserTheme> userThemes);
+    void completeFinalRegistration(String email, String nickname, String profile, Set<String> themeNames);
 
     void completeRegistration(String email, String nickname, String profile, Set<UserTheme> userThemes);
 

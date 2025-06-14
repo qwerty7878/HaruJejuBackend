@@ -14,15 +14,22 @@ import com.goodda.jejuday.Auth.entity.UserTheme;
 import com.goodda.jejuday.Auth.repository.EmailVerificationRepository;
 import com.goodda.jejuday.Auth.repository.TemporaryUserRepository;
 import com.goodda.jejuday.Auth.repository.UserRepository;
+import com.goodda.jejuday.Auth.repository.UserThemeRepository;
+import com.goodda.jejuday.Auth.security.JwtService;
+import com.goodda.jejuday.Auth.security.JwtUtil;
+import com.goodda.jejuday.Auth.service.TemporaryUserService;
 import com.goodda.jejuday.Auth.service.UserService;
 import com.goodda.jejuday.Auth.util.exception.BadRequestException;
 import com.goodda.jejuday.Auth.util.exception.CustomS3Exception;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,20 +45,42 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final AmazonS3 amazonS3;
-
     @Value("${aws.s3.bucketName}")
     private String bucketName;
 
+    private final AmazonS3 amazonS3;
+    private final JwtService jwtService;
+    private final TemporaryUserService temporaryUserService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TemporaryUserRepository temporaryUserRepository;
     private final EmailVerificationRepository emailVerificationRepository;
+    private final UserThemeRepository userThemeRepository;
 
     @Override
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email: " + email));
+    }
+
+    @Override
+    public void setLoginCookie(HttpServletResponse response, String email) {
+        jwtService.addAccessTokenCookie(response, email); // 내부적으로 role은 고정되었거나 기본값일 수 있음
+    }
+
+    @Override
+    public boolean matchesPassword(String rawPassword, String encodedPassword) {
+        return passwordEncoder.matches(rawPassword, encodedPassword);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(String email, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        String encoded = passwordEncoder.encode(newPassword);
+        user.setPassword(encoded);
+        userRepository.save(user);
     }
 
     @Override
@@ -76,21 +105,58 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String uploadProfileImage(MultipartFile profileImage) {
-        String originalFilename = profileImage.getOriginalFilename();
-        String savedFilename = UUID.randomUUID().toString() + "_" + originalFilename;
-        String key = "profile-images/" + savedFilename;
+        validateProfileImage(profileImage);
 
+        String key = generateImageKey(profileImage.getOriginalFilename());
+        ObjectMetadata metadata = createMetadata(profileImage);
+
+        uploadToS3(profileImage, key, metadata);
+
+        return getImageUrl(key);
+    }
+
+    private void validateProfileImage(MultipartFile profileImage) {
+        if (profileImage == null || profileImage.isEmpty()) {
+            throw new IllegalArgumentException("프로필 이미지가 비어있습니다.");
+        }
+
+        String originalFilename = profileImage.getOriginalFilename();
+        if (originalFilename == null || originalFilename.trim().isEmpty()) {
+            throw new IllegalArgumentException("파일명이 유효하지 않습니다.");
+        }
+
+        String contentType = profileImage.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("이미지 파일만 업로드 가능합니다.");
+        }
+    }
+
+    private String generateImageKey(String originalFilename) {
+        String savedFilename = UUID.randomUUID().toString() + "_" + originalFilename;
+        return "profile-images/" + savedFilename;
+    }
+
+    private ObjectMetadata createMetadata(MultipartFile profileImage) {
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(profileImage.getSize());
         metadata.setContentType(profileImage.getContentType());
+        return metadata;
+    }
 
+    private void uploadToS3(MultipartFile profileImage, String key, ObjectMetadata metadata) {
         try {
             amazonS3.putObject(bucketName, key, profileImage.getInputStream(), metadata);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload profile image to S3", e);
+            throw new RuntimeException("S3 프로필 이미지 업로드에 실패했습니다.", e);
         }
+    }
 
-        return amazonS3.getUrl(bucketName, key).toString();
+    private String getImageUrl(String key) {
+        URL url = amazonS3.getUrl(bucketName, key);
+        if (url == null) {
+            throw new RuntimeException("S3에서 이미지 URL을 가져올 수 없습니다.");
+        }
+        return url.toString();
     }
 
     @Override
@@ -112,8 +178,8 @@ public class UserServiceImpl implements UserService {
 
 
     private String extractFileName(String fileUrl) {
-        String httpsPrefix = "https://~/";
-        String s3Prefix = "s3://버킷명/";
+        String httpsPrefix = "https://jejudaybucket123.s3.amazonaws.com/";
+        String s3Prefix = "s3://jejudaybucket123/";
 
         if (fileUrl.startsWith(httpsPrefix)) {
             return fileUrl.replace(httpsPrefix, "");
@@ -139,53 +205,47 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void saveTemporaryUser(String email, String password, Platform platform, Language language) {
-        language = Optional.ofNullable(language).orElse(Language.KOREAN);
-
-        TemporaryUser.TemporaryUserBuilder builder = TemporaryUser.builder()
-                .email(email)
-                .platform(platform)
-                .language(language);
-
-        if (password != null && !password.isBlank()) {
-            builder.password(passwordEncoder.encode(password));
-        }
-
-        temporaryUserRepository.save(builder.build());
+    public void saveTemporaryUser(String name, String email, String password, Platform platform, Language language) {
+        temporaryUserService.save(language, platform, name, email, password);
     }
 
     @Override
     @Transactional
-    public void completeFinalRegistration(String email, String nickname, String profile, Set<UserTheme> userThemes) {
-        TemporaryUser tempUser = temporaryUserRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Temporary user not found."));
+    public void completeFinalRegistration(String email, String nickname, String profile, Set<String> themeNames) {
 
         if (userRepository.existsByNickname(nickname)) {
             throw new BadRequestException("이미 사용 중인 닉네임 입니다!");
         }
 
-        emailVerificationRepository.deleteByTemporaryUser_Email(email);
+        Set<UserTheme> userThemes = themeNames != null
+                ? themeNames.stream()
+                .map(name -> userThemeRepository.findByName(name)
+                        .orElseGet(() -> userThemeRepository.save(UserTheme.builder().name(name).build())))
+                .collect(Collectors.toSet())
+                : Set.of();
+
         completeRegistration(email, nickname, profile, userThemes);
-        temporaryUserRepository.delete(tempUser);
     }
+
 
     @Override
     @Transactional
     public void completeRegistration(String email, String nickname, String profile, Set<UserTheme> userThemes) {
         TemporaryUser tempUser = temporaryUserRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Temporary user not found."));
+                .orElseThrow(() -> new IllegalArgumentException("임시 사용자를 찾을 수 없습니다."));
 
         String password = tempUser.getPlatform() == Platform.KAKAO ? null : tempUser.getPassword();
 
         User user = User.builder()
+                .name(tempUser.getName())
                 .email(tempUser.getEmail())
                 .password(password)
                 .nickname(nickname)
                 .platform(tempUser.getPlatform())
-                .profile(profile)
-                .createdAt(LocalDateTime.now())
                 .language(tempUser.getLanguage())
+                .profile(profile)
                 .userThemes(userThemes)
+                .createdAt(LocalDateTime.now())
                 .active(true)
                 .build();
 
