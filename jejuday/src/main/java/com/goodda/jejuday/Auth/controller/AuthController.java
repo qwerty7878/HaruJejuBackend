@@ -1,0 +1,65 @@
+package com.goodda.jejuday.Auth.controller;
+
+import com.goodda.jejuday.Auth.dto.ApiResponse;
+import com.goodda.jejuday.Auth.dto.login.request.LoginRequest;
+import com.goodda.jejuday.Auth.dto.login.response.LoginResponse;
+import com.goodda.jejuday.Auth.entity.User;
+import com.goodda.jejuday.Auth.service.EmailService;
+import com.goodda.jejuday.Auth.service.EmailVerificationService;
+import com.goodda.jejuday.Auth.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@Tag(name = "Auth", description = "로그인 및 비밀번호 찾기 API")
+@CrossOrigin(origins = "*")
+@RestController
+@RequestMapping("/v1/users/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final UserService userService;
+    private final EmailService emailService;
+    private final EmailVerificationService emailVerificationService;
+
+    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인합니다.")
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+        User user = userService.getUserByEmailOrNull(request.getEmail());
+        if (user == null || !userService.matchesPassword(request.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다.");
+        }
+        userService.setLoginCookie(response, user.getEmail());
+        return ResponseEntity.ok(userService.loginResponse(user));
+    }
+
+    @Operation(summary = "비밀번호 재설정 이메일 전송", description = "비밀번호 재설정을 위한 인증 이메일을 발송합니다.")
+    @PostMapping("/find/email/send")
+    public ResponseEntity<ApiResponse<String>> sendResetEmail(@RequestParam String email) {
+        emailService.sendPasswordResetVerificationEmail(email);
+        return new ResponseEntity<>(ApiResponse.onSuccess("비밀번호 재설정 이메일 전송 완료"), HttpStatus.OK);
+    }
+
+    @Operation(summary = "재설정 인증 코드 확인", description = "전송된 인증 코드를 검증합니다.")
+    @PostMapping("/find/email/verify")
+    public ResponseEntity<ApiResponse<String>> verifyResetCode(@RequestParam String email, @RequestParam String code) {
+        boolean verified = emailVerificationService.verifyUserCode(email, code);
+        if (!verified) {
+            throw new IllegalArgumentException("인증 코드가 유효하지 않습니다.");
+        }
+        return new ResponseEntity<>(ApiResponse.onSuccess("인증 완료"), HttpStatus.OK);
+    }
+
+
+    @Operation(summary = "비밀번호 재설정", description = "새 비밀번호로 비밀번호를 변경합니다.")
+    @PostMapping("/find/password/reset")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@RequestParam String email, @RequestParam String newPassword) {
+        userService.resetPassword(email, newPassword);
+        return new ResponseEntity<>(ApiResponse.onSuccess("비밀번호가 성공적으로 변경되었습니다."), HttpStatus.OK);
+    }
+}
