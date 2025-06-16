@@ -16,7 +16,6 @@ import com.goodda.jejuday.Auth.repository.TemporaryUserRepository;
 import com.goodda.jejuday.Auth.repository.UserRepository;
 import com.goodda.jejuday.Auth.repository.UserThemeRepository;
 import com.goodda.jejuday.Auth.security.JwtService;
-import com.goodda.jejuday.Auth.security.JwtUtil;
 import com.goodda.jejuday.Auth.service.TemporaryUserService;
 import com.goodda.jejuday.Auth.service.UserService;
 import com.goodda.jejuday.Auth.util.exception.BadRequestException;
@@ -26,7 +25,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -205,8 +203,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void saveTemporaryUser(String name, String email, String password, Platform platform, Language language) {
-        temporaryUserService.save(language, platform, name, email, password);
+    public void saveTemporaryUser(String name, String email, String passwordOrProfile, Platform platform, Language language) {
+        temporaryUserService.save(language, platform, name, email, passwordOrProfile);
     }
 
     @Override
@@ -234,19 +232,18 @@ public class UserServiceImpl implements UserService {
         TemporaryUser tempUser = temporaryUserRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("임시 사용자를 찾을 수 없습니다."));
 
-        String password = tempUser.getPlatform() == Platform.KAKAO ? null : tempUser.getPassword();
-
         User user = User.builder()
                 .name(tempUser.getName())
                 .email(tempUser.getEmail())
-                .password(password)
+                .password(tempUser.getPlatform() == Platform.KAKAO ? null : tempUser.getPassword())
                 .nickname(nickname)
                 .platform(tempUser.getPlatform())
                 .language(tempUser.getLanguage())
-                .profile(profile)
+                .profile(profile != null ? profile : tempUser.getProfile())
                 .userThemes(userThemes)
                 .createdAt(LocalDateTime.now())
                 .active(true)
+                .isKakaoLogin(tempUser.getPlatform() == Platform.KAKAO)
                 .build();
 
         userRepository.save(user);
@@ -294,6 +291,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
+    }
+
+    @Override
+    public boolean existsByNickname(String nickname) {
+        return userRepository.existsByNickname(nickname);
     }
 
     @Override

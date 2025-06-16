@@ -42,6 +42,9 @@ public class TemporaryUser {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "profile", columnDefinition = "TEXT")
+    private String profile;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "platform", length = 20, nullable = false)
     private Platform platform;

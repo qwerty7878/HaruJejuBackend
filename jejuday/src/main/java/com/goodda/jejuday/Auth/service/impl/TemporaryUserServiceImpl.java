@@ -9,6 +9,7 @@ import com.goodda.jejuday.Auth.util.exception.DuplicateEmailException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,24 +22,32 @@ public class TemporaryUserServiceImpl implements TemporaryUserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public void save(Language language, Platform platform, String name, String email, String password) {
+    public void save(Language language, Platform platform, String name, String email, String passwordOrProfileUrl) {
+        if (temporaryUserRepository.existsByEmail(email)) {
+            return;
+        }
 
         String encodedPassword = null;
-        if (platform != Platform.KAKAO && password != null && !password.isBlank()) {
-            encodedPassword = passwordEncoder.encode(password);
+        String profile = null;
+
+        if (platform == Platform.APP) {
+            encodedPassword = passwordEncoder.encode(passwordOrProfileUrl);
+            profile = null;
+        } else {
+            encodedPassword = UUID.randomUUID().toString(); // ← 더미 비밀번호 강제로 설정
+            profile = passwordOrProfileUrl;
         }
 
-        if (temporaryUserRepository.existsByEmail(email)) {
-            throw new DuplicateEmailException("이미 존재하는 이메일입니다.");
-        }
 
         TemporaryUser temporaryUser = TemporaryUser.builder()
                 .language(language)
-                .platform(Platform.APP)
+                .platform(platform)
                 .name(name)
                 .email(email)
                 .password(encodedPassword)
+                .profile(profile)
                 .build();
+
         temporaryUserRepository.save(temporaryUser);
     }
 

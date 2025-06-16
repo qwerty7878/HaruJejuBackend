@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TemporaryUserService {
-    void save(Language language, Platform platform, String email, String password, String name);    //  저장
+    void save(Language language, Platform platform, String name, String email, String passwordOrProfileUrl);    //  저장
 
     Optional<TemporaryUser> findByEmail(String email);  // 인증
 
