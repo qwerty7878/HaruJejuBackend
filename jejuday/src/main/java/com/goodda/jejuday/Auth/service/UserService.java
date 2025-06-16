@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
     User getUserByEmail(String email);
+
     void setLoginCookie(HttpServletResponse response, String email);
 
     boolean matchesPassword(String rawPassword, String encodedPassword);
@@ -42,10 +43,12 @@ public interface UserService {
     void updateUserLanguage(Long userId, Language language);
 
     boolean existsByEmail(String email);
+    boolean existsByNickname(String nickname);
 
     Long getAuthenticatedUserId();
 
     void updateFcmToken(Long userId, String fcmToken);
 
     User getUserById(Long userId);
+
 }

@@ -10,6 +10,7 @@ import com.goodda.jejuday.Auth.entity.Platform;
 import com.goodda.jejuday.Auth.service.EmailService;
 import com.goodda.jejuday.Auth.service.EmailVerificationService;
 import com.goodda.jejuday.Auth.service.UserService;
+import com.goodda.jejuday.Auth.service.KakaoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
@@ -23,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -57,7 +59,7 @@ public class RegisterController {
         return ResponseEntity.ok(ApiResponse.onSuccess("설정된 언어 : " + language.name()));
     }
 
-    @Operation(summary = "임시 사용자 등록", description = "앱 회원가입 시 임시 사용자로 저장합니다.")
+    @Operation(summary = "일반 임시 사용자 등록", description = "앱 회원가입 시 임시 사용자로 저장합니다.")
     @PostMapping("/app")
     public ResponseEntity<ApiResponse<String>> registerAppUser(@Valid @RequestBody TempAppRegisterRequest request,
                                                                @CookieValue(value = "language", required = false) Language language) {
@@ -115,5 +117,19 @@ public class RegisterController {
         userService.setLoginCookie(response, request.getEmail());
 
         return new ResponseEntity<>(ApiResponse.onSuccess("회원가입 완료"), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/check/email")
+    @Operation(summary = "이메일 중복 확인", description = "이메일이 이미 존재하는지 확인합니다.")
+    public ResponseEntity<ApiResponse<Boolean>> checkEmail(@RequestParam String email) {
+        boolean exists = userService.existsByEmail(email);
+        return ResponseEntity.ok(ApiResponse.onSuccess(exists));
+    }
+
+    @GetMapping("/check/nickname")
+    @Operation(summary = "닉네임 중복 확인", description = "닉네임이 이미 존재하는지 확인합니다.")
+    public ResponseEntity<ApiResponse<Boolean>> checkNickname(@RequestParam String nickname) {
+        boolean exists = userService.existsByNickname(nickname);
+        return ResponseEntity.ok(ApiResponse.onSuccess(exists));
     }
 }
