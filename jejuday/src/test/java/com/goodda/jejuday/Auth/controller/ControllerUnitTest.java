@@ -9,15 +9,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.goodda.jejuday.Auth.dto.ApiResponse;
+import com.goodda.jejuday.Auth.dto.login.request.DeleteRequest;
 import com.goodda.jejuday.Auth.dto.login.request.LoginRequest;
 import com.goodda.jejuday.Auth.dto.login.response.LoginResponse;
 import com.goodda.jejuday.Auth.dto.register.request.EmailSenderRequest;
 import com.goodda.jejuday.Auth.dto.register.request.EmailValidationRequest;
 import com.goodda.jejuday.Auth.dto.register.request.FinalAppRegisterRequest;
 import com.goodda.jejuday.Auth.dto.register.request.TempAppRegisterRequest;
+import com.goodda.jejuday.Auth.entity.Gender;
 import com.goodda.jejuday.Auth.entity.Language;
 import com.goodda.jejuday.Auth.entity.Platform;
 import com.goodda.jejuday.Auth.entity.User;
+import com.goodda.jejuday.Auth.security.JwtService;
 import com.goodda.jejuday.Auth.service.EmailService;
 import com.goodda.jejuday.Auth.service.EmailVerificationService;
 import com.goodda.jejuday.Auth.service.UserService;
@@ -42,6 +45,8 @@ class ControllerUnitTest {
     private UserService userService;
     @Mock
     private EmailService emailService;
+    @Mock
+    private JwtService jwtService;
 
     @Mock
     private EmailVerificationService emailVerificationService;
@@ -66,7 +71,14 @@ class ControllerUnitTest {
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(res.getBody().getData()).contains("임시 사용자");
-        verify(userService).saveTemporaryUser(anyString(), anyString(), anyString(), Platform.APP, any());
+
+        verify(userService).saveTemporaryUser(
+                anyString(),
+                anyString(),
+                anyString(),
+                eq(Platform.APP),
+                any()
+        );
     }
 
     @Test
@@ -108,17 +120,17 @@ class ControllerUnitTest {
 
         when(userService.uploadProfileImage(file)).thenReturn("https://profile/pic.jpg");
 
-        ResponseEntity<ApiResponse<String>> res = registerController.completeRegistration(req, file, response);
+        ResponseEntity<ApiResponse<String>> res = registerController.completeRegistration(req, file, Gender.MALE, response);
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        verify(userService).completeFinalRegistration(eq("hi@hi.com"), eq("닉네임"), eq("https://profile/pic.jpg"), any());
+        verify(userService).completeFinalRegistration(eq("hi@hi.com"), eq("닉네임"), eq("https://profile/pic.jpg"), any(), any());
         verify(userService).setLoginCookie(response, "hi@hi.com");
     }
 
     @Test
     @DisplayName("/auth/login 로그인")
     void login_success() {
-        AuthController authController = new AuthController(userService, emailService, emailVerificationService);
+        AuthController authController = new AuthController(userService, emailService, emailVerificationService,jwtService);
         LoginRequest req = LoginRequest.builder().email("a@a.com").password("pass1234").build();
 
         User user = new User();
@@ -138,13 +150,22 @@ class ControllerUnitTest {
     @Test
     @DisplayName("/account 탈퇴")
     void deactivateUser_success() {
-        AccountController accountController = new AccountController(userService);
-        when(userService.getAuthenticatedUserId()).thenReturn(1L);
+        // given
+        DeleteRequest request = DeleteRequest.builder()
+                .email("user@example.com")
+                .password("securePass1!")
+                .build();
 
-        ResponseEntity<ApiResponse<String>> res = accountController.deactivateUser(response);
+        AccountController accountController = new AccountController(userService);
+
+        // when
+        ResponseEntity<ApiResponse<String>> res = accountController.deleteUsers(request);
+
+        // then
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(userService).deactivate(1L);
+        verify(userService).deleteUsers("user@example.com", "securePass1!");
     }
+
 
     @Test
     @DisplayName("/profile 이미지 업로드")
