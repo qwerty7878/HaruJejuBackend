@@ -24,7 +24,7 @@ public class TemporaryUserServiceImpl implements TemporaryUserService {
     @Override
     public void save(Language language, Platform platform, String name, String email, String passwordOrProfileUrl) {
         if (temporaryUserRepository.existsByEmail(email)) {
-            return;
+            throw new DuplicateEmailException("이미 존재하는 이메일입니다.");
         }
 
         String encodedPassword = null;
