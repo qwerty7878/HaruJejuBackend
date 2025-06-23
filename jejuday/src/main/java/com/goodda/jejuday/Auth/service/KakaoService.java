@@ -113,7 +113,7 @@ public class KakaoService {
 
             ResponseEntity<String> response = restTemplate.exchange(
                     KAKAO_API_URI + "/v2/user/me",
-                    HttpMethod.GET, // POST -> GET으로 변경
+                    HttpMethod.GET,
                     request,
                     String.class
             );
@@ -144,7 +144,8 @@ public class KakaoService {
             long id = jsonNode.get("id").asLong();
             String email = account.has("email") ? account.get("email").asText() : null;
             String nickname = profile.has("nickname") ? profile.get("nickname").asText() : null;
-            String profileImageUrl = profile.has("profile_image_url") ? profile.get("profile_image_url").asText() : null;
+            String profileImageUrl =
+                    profile.has("profile_image_url") ? profile.get("profile_image_url").asText() : null;
 
             return KakaoDTO.builder()
                     .id(id)
