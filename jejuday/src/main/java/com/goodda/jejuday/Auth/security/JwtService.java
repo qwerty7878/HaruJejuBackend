@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class JwtService {
 
-    // 쿠키 만료 시간 (초 단위, 여기서는 1일)
-    private static final int ACCESS_TOKEN_EXPIRATION_SECONDS = 86400;
+    // 쿠키 만료 시간 (초 단위, 여기서는 2일)
+    private static final int ACCESS_TOKEN_EXPIRATION_SECONDS = 1000 * 60 * 60 * 48;;
 
     private final JwtUtil jwtUtil;
 
