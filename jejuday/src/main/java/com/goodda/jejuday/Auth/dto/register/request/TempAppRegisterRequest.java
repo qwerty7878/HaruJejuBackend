@@ -4,7 +4,6 @@ import com.goodda.jejuday.Auth.entity.Language;
 import com.goodda.jejuday.Auth.entity.Platform;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,8 +27,8 @@ public class TempAppRegisterRequest {
 
     @NotBlank(message = "비밀번호는 필수입니다.")
     @Pattern(
-            regexp = "^(?=.*[A-Z])(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,12}$",
-            message = "비밀번호는 대문자 1개, 소문자/숫자 포함, 특수문자 1개 이상을 포함해야 합니다."
+            regexp = "^(?=.*[a-zA-Z\\d])(?=.*[!_@-])[a-zA-Z\\d!_@-]{8,12}$",
+            message = "비밀번호는 8~12자 이내이며, 영문 또는 숫자를 포함하고, 특수문자(!, _, @, -)를 하나 이상 포함해야 합니다."
     )
     private String password;
 }

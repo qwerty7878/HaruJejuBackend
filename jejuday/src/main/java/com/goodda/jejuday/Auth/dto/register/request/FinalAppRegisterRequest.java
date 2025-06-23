@@ -1,8 +1,9 @@
 package com.goodda.jejuday.Auth.dto.register.request;
 
+import com.goodda.jejuday.Auth.entity.Gender;
+import com.goodda.jejuday.Auth.util.valid.ValidNickname;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,7 +23,7 @@ public class FinalAppRegisterRequest {
     private String email;
 
     @NotBlank(message = "닉네임은 필수입니다.")
-    @Size(min = 2, max = 8, message = "닉네임은 2자 이상 8자 이하로 입력해주세요.")
+    @ValidNickname
     private String nickname;
 
     private List<String> themes;
