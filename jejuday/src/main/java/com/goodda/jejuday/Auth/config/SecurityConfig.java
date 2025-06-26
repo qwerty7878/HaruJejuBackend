@@ -50,7 +50,7 @@ public class SecurityConfig {
                                 "/mypage",
                                 "/notifications/test-send",
                                 "/notifications/*/fcm-token",
-                                "/v1/users/**"
+                                "/v1/**"
                         ).permitAll()
 
                         // Admin-only routes
