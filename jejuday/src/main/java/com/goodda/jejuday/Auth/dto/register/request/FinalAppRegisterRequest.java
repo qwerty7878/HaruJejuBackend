@@ -1,7 +1,6 @@
 package com.goodda.jejuday.Auth.dto.register.request;
 
-import com.goodda.jejuday.Auth.entity.Gender;
-import com.goodda.jejuday.Auth.util.valid.ValidNickname;
+import com.goodda.jejuday.common.annotation.valid.ValidNickname;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;

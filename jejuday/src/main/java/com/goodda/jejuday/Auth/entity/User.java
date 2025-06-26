@@ -82,4 +82,10 @@ public class User {
     @Column(name = "language", nullable = false)
     private Language language;
 
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
+    @Column(name = "is_notification_enabled", nullable = false)
+    private boolean isNotificationEnabled = true;
+
 }

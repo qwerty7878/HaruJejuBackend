@@ -8,7 +8,9 @@ import com.goodda.jejuday.Auth.security.JwtService;
 import com.goodda.jejuday.Auth.service.EmailService;
 import com.goodda.jejuday.Auth.service.EmailVerificationService;
 import com.goodda.jejuday.Auth.service.UserService;
+import com.goodda.jejuday.common.annotation.certification.CurrentUser;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -71,9 +73,13 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @Operation(summary = "로그아웃", description = "JWT 쿠키를 삭제하여 로그아웃 처리합니다.")
-    public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+    @Operation(summary = "로그아웃", description = "JWT 쿠키를 삭제하고 FCM 토큰을 제거하여 로그아웃 처리합니다.")
+    public ResponseEntity<ApiResponse<String>> logout(
+            @Parameter(hidden = true) @CurrentUser User user,
+            HttpServletResponse response
+    ) {
         jwtService.clearAccessTokenCookie(response);
+        userService.logoutUser(user.getId()); // FCM 토큰 제거
         return ResponseEntity.ok(ApiResponse.onSuccess("로그아웃 성공"));
     }
 }

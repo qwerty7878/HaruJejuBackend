@@ -310,9 +310,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void updateFcmToken(Long userId, String fcmToken) {
-//        User user = userRepository.findById(userId)
-//                .orElseThrow(() -> new BadRequestException("User not found"));
-//        user.setFcmToken(fcmToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("유저가 존재하지 않습니다."));
+        user.setFcmToken(fcmToken);
     }
 
     @Override
@@ -320,4 +320,23 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BadRequestException("User not found with id: " + userId));
     }
+
+    @Override
+    @Transactional
+    public void updateNotificationSetting(Long userId, boolean enabled) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        user.setNotificationEnabled(enabled);
+    }
+
+    @Override
+    @Transactional
+    public void logoutUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        user.setFcmToken(null); // 토큰 제거
+    }
+
 }

@@ -50,4 +50,7 @@ public interface UserService {
 
     User getUserById(Long userId);
 
+    void updateNotificationSetting(Long userId, boolean enabled);
+
+    void logoutUser(Long userId);
 }
