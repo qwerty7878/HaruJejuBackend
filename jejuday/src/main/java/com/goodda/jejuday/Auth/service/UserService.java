@@ -37,7 +37,7 @@ public interface UserService {
 
     void completeRegistration(String email, String nickname, String profile, Set<UserTheme> userThemes, Gender gender);
 
-    void deleteUsers(String email, String rawPassword);
+    void deleteUsers(String email);
 
     void updateUserLanguage(Long userId, Language language);
 

@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.goodda.jejuday.Auth.dto.ApiResponse;
-import com.goodda.jejuday.Auth.dto.login.request.DeleteRequest;
 import com.goodda.jejuday.Auth.dto.login.request.LoginRequest;
 import com.goodda.jejuday.Auth.dto.login.response.LoginResponse;
 import com.goodda.jejuday.Auth.dto.register.request.EmailSenderRequest;
@@ -20,6 +19,7 @@ import com.goodda.jejuday.Auth.entity.Gender;
 import com.goodda.jejuday.Auth.entity.Language;
 import com.goodda.jejuday.Auth.entity.Platform;
 import com.goodda.jejuday.Auth.entity.User;
+import com.goodda.jejuday.Auth.repository.UserRepository;
 import com.goodda.jejuday.Auth.security.JwtService;
 import com.goodda.jejuday.Auth.service.EmailService;
 import com.goodda.jejuday.Auth.service.EmailVerificationService;
@@ -47,6 +47,9 @@ class ControllerUnitTest {
     private EmailService emailService;
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private EmailVerificationService emailVerificationService;
@@ -120,17 +123,20 @@ class ControllerUnitTest {
 
         when(userService.uploadProfileImage(file)).thenReturn("https://profile/pic.jpg");
 
-        ResponseEntity<ApiResponse<String>> res = registerController.completeRegistration(req, file, Gender.MALE, response);
+        ResponseEntity<ApiResponse<LoginResponse>> res = registerController.completeRegistration(req, file, Gender.MALE,
+                response);
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        verify(userService).completeFinalRegistration(eq("hi@hi.com"), eq("닉네임"), eq("https://profile/pic.jpg"), any(), any());
+        verify(userService).completeFinalRegistration(eq("hi@hi.com"), eq("닉네임"), eq("https://profile/pic.jpg"), any(),
+                any());
         verify(userService).setLoginCookie(response, "hi@hi.com");
     }
 
     @Test
     @DisplayName("/auth/login 로그인")
     void login_success() {
-        AuthController authController = new AuthController(userService, emailService, emailVerificationService,jwtService);
+        AuthController authController = new AuthController(userService, emailService, emailVerificationService,
+                jwtService, userRepository);
         LoginRequest req = LoginRequest.builder().email("a@a.com").password("pass1234").build();
 
         User user = new User();
@@ -151,19 +157,16 @@ class ControllerUnitTest {
     @DisplayName("/account 탈퇴")
     void deactivateUser_success() {
         // given
-        DeleteRequest request = DeleteRequest.builder()
-                .email("user@example.com")
-                .password("securePass1!")
-                .build();
+        String email = "user@example.com";
 
         AccountController accountController = new AccountController(userService);
 
         // when
-        ResponseEntity<ApiResponse<String>> res = accountController.deleteUsers(request);
+        ResponseEntity<ApiResponse<String>> res = accountController.deleteUsers(email);
 
         // then
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(userService).deleteUsers("user@example.com", "securePass1!");
+        verify(userService).deleteUsers(email);
     }
 
 

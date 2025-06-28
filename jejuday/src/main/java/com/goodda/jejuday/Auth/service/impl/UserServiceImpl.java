@@ -261,13 +261,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteUsers(String email, String rawPassword) {
+    public void deleteUsers(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new BadRequestException("비밀번호가 일치하지 않습니다.");
-        }
+                .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다"));
 
         String profile = user.getProfile();
         if (profile != null && !profile.isBlank()) {
@@ -338,5 +334,4 @@ public class UserServiceImpl implements UserService {
 
         user.setFcmToken(null); // 토큰 제거
     }
-
 }
