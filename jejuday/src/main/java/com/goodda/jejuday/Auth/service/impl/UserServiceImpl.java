@@ -261,13 +261,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteUsers(String email, String rawPassword) {
+    public void deleteUsers(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new BadRequestException("비밀번호가 일치하지 않습니다.");
-        }
+                .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다"));
 
         String profile = user.getProfile();
         if (profile != null && !profile.isBlank()) {
@@ -319,5 +315,23 @@ public class UserServiceImpl implements UserService {
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BadRequestException("User not found with id: " + userId));
+    }
+
+    @Override
+    @Transactional
+    public void updateNotificationSetting(Long userId, boolean enabled) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        user.setNotificationEnabled(enabled);
+    }
+
+    @Override
+    @Transactional
+    public void logoutUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        user.setFcmToken(null);
     }
 }

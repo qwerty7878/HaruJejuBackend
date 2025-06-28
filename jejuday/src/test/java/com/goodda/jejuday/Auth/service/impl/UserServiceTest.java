@@ -250,7 +250,7 @@ public class UserServiceTest {
         when(passwordEncoder.matches(rawPassword, encodedPassword)).thenReturn(true);
 
         // when
-        userService.deleteUsers(email, rawPassword);
+        userService.deleteUsers(email);
 
         // then
         verify(userRepository).delete(user);
