@@ -22,30 +22,20 @@ public class TemporaryUserServiceImpl implements TemporaryUserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public void save(Language language, Platform platform, String name, String email, String passwordOrProfileUrl) {
+    public void save(Language language, Platform platform, String name, String email, String rawPassword) {
         if (temporaryUserRepository.existsByEmail(email)) {
             throw new DuplicateEmailException("이미 존재하는 이메일입니다.");
         }
 
-        String encodedPassword = null;
-        String profile = null;
-
-        if (platform == Platform.APP) {
-            encodedPassword = passwordEncoder.encode(passwordOrProfileUrl);
-            profile = null;
-        } else {
-            encodedPassword = UUID.randomUUID().toString(); // ← 더미 비밀번호 강제로 설정
-            profile = passwordOrProfileUrl;
-        }
-
+        String encodedPassword = passwordEncoder.encode(rawPassword);
 
         TemporaryUser temporaryUser = TemporaryUser.builder()
                 .language(language)
-                .platform(platform)
+                .platform(Platform.APP)
                 .name(name)
                 .email(email)
                 .password(encodedPassword)
-                .profile(profile)
+                .profile(null)
                 .build();
 
         temporaryUserRepository.save(temporaryUser);

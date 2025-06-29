@@ -2,10 +2,21 @@ package com.goodda.jejuday.auth.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.goodda.jejuday.auth.dto.register.request.FinalAppRegisterRequest;
 import com.goodda.jejuday.auth.dto.KakaoDTO;
+import com.goodda.jejuday.auth.entity.Gender;
+import com.goodda.jejuday.auth.entity.Language;
+import com.goodda.jejuday.auth.entity.Platform;
+import com.goodda.jejuday.auth.entity.User;
+import com.goodda.jejuday.auth.entity.UserTheme;
+import com.goodda.jejuday.auth.repository.UserRepository;
+import com.goodda.jejuday.auth.repository.UserThemeRepository;
+import com.goodda.jejuday.auth.security.CustomUserDetails;
+import com.goodda.jejuday.auth.util.exception.BadRequestException;
 import com.goodda.jejuday.auth.util.exception.KakaoAuthException;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
+import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +25,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
@@ -26,6 +41,8 @@ public class KakaoService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
+    private final UserThemeRepository userThemeRepository;
 
     @Value("${kakao.client.id}")
     private String kakaoClientId;
@@ -160,12 +177,43 @@ public class KakaoService {
         }
     }
 
-    public FinalAppRegisterRequest convertToFinalRequest(KakaoDTO kakaoDTO) {
-        return FinalAppRegisterRequest.builder()
-                .email(kakaoDTO.getAccountEmail())
-                .nickname(kakaoDTO.getNickname())
-                .profile(kakaoDTO.getProfileImageUrl())
+    @Transactional
+    public void registerKakaoUser(String email, String nickname, String profileUrl,
+                                  Set<String> themeNames, Gender gender, Language language) {
+
+        if (userRepository.existsByNickname(nickname)) {
+            throw new BadRequestException("이미 사용 중인 닉네임입니다.");
+        }
+
+        Set<UserTheme> userThemes = themeNames != null
+                ? themeNames.stream()
+                .map(name -> userThemeRepository.findByName(name)
+                        .orElseGet(() -> userThemeRepository.save(UserTheme.builder().name(name).build())))
+                .collect(Collectors.toSet())
+                : Set.of();
+
+        User user = User.builder()
+                .name(nickname) // 카카오는 name = nickname 간주
+                .email(email)
+                .password(null)
+                .nickname(nickname)
+                .platform(Platform.KAKAO)
+                .language(language)
+                .gender(gender)
+                .profile(profileUrl)
+                .userThemes(userThemes)
+                .createdAt(LocalDateTime.now())
+                .isKakaoLogin(true)
                 .build();
+
+        userRepository.save(user);
+    }
+
+    public void authenticateUser(User user) {
+        UserDetails userDetails = new CustomUserDetails(user);
+        UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
 }

@@ -237,15 +237,15 @@ public class UserServiceImpl implements UserService {
         User user = User.builder()
                 .name(tempUser.getName())
                 .email(tempUser.getEmail())
-                .password(tempUser.getPlatform() == Platform.KAKAO ? null : tempUser.getPassword())
+                .password(tempUser.getPassword())
                 .nickname(nickname)
-                .platform(tempUser.getPlatform())
+                .platform(Platform.APP)
                 .language(tempUser.getLanguage())
                 .gender(gender)
                 .profile(profile != null ? profile : tempUser.getProfile())
                 .userThemes(userThemes)
                 .createdAt(LocalDateTime.now())
-                .isKakaoLogin(tempUser.getPlatform() == Platform.KAKAO)
+                .isKakaoLogin(false)
                 .build();
 
         userRepository.save(user);
@@ -331,6 +331,35 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new BadRequestException("User not found"));
 
         user.setFcmToken(null);
+    }
+
+    @Override
+    @Transactional
+    public void updateNickname(Long userId, String newNickname) {
+        if (userRepository.existsByNickname(newNickname)) {
+            throw new BadRequestException("이미 사용 중인 닉네임입니다.");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        user.setNickname(newNickname);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void updateUserThemes(Long userId, Set<String> themeNames) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        Set<UserTheme> userThemes = themeNames.stream()
+                .map(name -> userThemeRepository.findByName(name)
+                        .orElseGet(() -> userThemeRepository.save(UserTheme.builder().name(name).build())))
+                .collect(Collectors.toSet());
+
+        user.setUserThemes(userThemes);
+        userRepository.save(user);
     }
 
 }

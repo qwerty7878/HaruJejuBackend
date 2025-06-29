@@ -97,7 +97,8 @@ public class RegisterController {
     @PostMapping(value = "/final", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<LoginResponse>> completeRegistration(
             @RequestPart("data") @Valid FinalAppRegisterRequest request,
-            @RequestPart(value = "profile", required = false) MultipartFile profile, @RequestParam("gender") Gender gender,
+            @RequestPart(value = "profile", required = false) MultipartFile profile,
+            @RequestParam("gender") Gender gender,
             HttpServletResponse response) {
 
         String profileImageUrl = Optional.ofNullable(profile)
