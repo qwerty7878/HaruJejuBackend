@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -56,5 +59,21 @@ public class AccountController {
         }
 
         return ResponseEntity.ok(ApiResponse.onSuccess("언어 변경 완료."));
+    }
+
+    @PostMapping("/nickname")
+    @Operation(summary = "닉네임 변경", description = "사용자의 닉네임을 변경합니다.")
+    public ResponseEntity<ApiResponse<String>> updateNickname(@RequestParam String nickname) {
+        Long userId = userService.getAuthenticatedUserId();
+        userService.updateNickname(userId, nickname);
+        return ResponseEntity.ok(ApiResponse.onSuccess("닉네임이 변경되었습니다."));
+    }
+
+    @PostMapping("/themes")
+    @Operation(summary = "테마 변경", description = "사용자의 테마를 변경합니다.")
+    public ResponseEntity<ApiResponse<String>> updateThemes(@RequestBody Set<String> themes) {
+        Long userId = userService.getAuthenticatedUserId();
+        userService.updateUserThemes(userId, themes);
+        return ResponseEntity.ok(ApiResponse.onSuccess("테마가 변경되었습니다."));
     }
 }
