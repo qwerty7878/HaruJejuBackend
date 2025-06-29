@@ -332,6 +332,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BadRequestException("User not found"));
 
-        user.setFcmToken(null); // 토큰 제거
+        user.setFcmToken(null);
     }
+
 }
