@@ -53,4 +53,9 @@ public interface UserService {
     void updateNotificationSetting(Long userId, boolean enabled);
 
     void logoutUser(Long userId);
+
+    void updateNickname(Long userId, String newNickname);
+
+    void updateUserThemes(Long userId, Set<String> themeNames);
+
 }

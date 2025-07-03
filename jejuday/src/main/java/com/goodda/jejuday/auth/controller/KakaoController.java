@@ -3,24 +3,25 @@ package com.goodda.jejuday.auth.controller;
 import com.goodda.jejuday.auth.dto.ApiResponse;
 import com.goodda.jejuday.auth.dto.KakaoDTO;
 import com.goodda.jejuday.auth.dto.login.response.LoginResponse;
-import com.goodda.jejuday.auth.dto.register.request.FinalAppRegisterRequest;
+import com.goodda.jejuday.auth.dto.register.request.KakaoFinalRegisterRequest;
 import com.goodda.jejuday.auth.entity.Language;
-import com.goodda.jejuday.auth.entity.Platform;
 import com.goodda.jejuday.auth.entity.User;
 import com.goodda.jejuday.auth.security.JwtService;
 import com.goodda.jejuday.auth.service.KakaoService;
 import com.goodda.jejuday.auth.service.UserService;
+import com.goodda.jejuday.auth.util.exception.BadRequestException;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,26 +40,6 @@ public class KakaoController {
     public ResponseEntity<ApiResponse<String>> getKakaoLoginUrl() {
         String loginUrl = kakaoService.getKakaoLoginUrl();
         return ResponseEntity.ok(ApiResponse.onSuccess(loginUrl));
-    }
-
-    @Operation(summary = "카카오 임시 사용자 등록", description = "카카오 회원가입 시 임시 사용자로 저장합니다.")
-    @GetMapping("/preload")
-    public ResponseEntity<ApiResponse<FinalAppRegisterRequest>> preloadKakaoUser(
-            @RequestParam String code,
-            @CookieValue(value = "language", required = false) Language language) {
-
-        KakaoDTO kakaoDTO = kakaoService.getKakaoUserInfo(code);
-
-        userService.saveTemporaryUser(
-                kakaoDTO.getNickname(),
-                kakaoDTO.getAccountEmail(),
-                kakaoDTO.getProfileImageUrl(),
-                Platform.KAKAO,
-                language
-        );
-
-        FinalAppRegisterRequest request = kakaoService.convertToFinalRequest(kakaoDTO);
-        return ResponseEntity.ok(ApiResponse.onSuccess(request));
     }
 
     @PostMapping("/login")
@@ -101,5 +82,36 @@ public class KakaoController {
             @RequestParam("code") String code) {
         return "redirect:/kakao-join?code=" + code;
     }
+
+    @PostMapping("/final-register")
+    @Operation(summary = "카카오 최종 회원가입 및 로그인", description = "카카오 인증 후 회원가입을 완료하고 JWT 발급")
+    public ResponseEntity<ApiResponse<LoginResponse>> kakaoFinalRegister(
+            @RequestBody KakaoFinalRegisterRequest request,
+            HttpServletResponse response) {
+
+        KakaoDTO kakaoDTO = kakaoService.getKakaoUserInfo(request.getCode());
+
+        User existing = userService.getUserByEmailOrNull(kakaoDTO.getAccountEmail());
+        if (existing != null) {
+            throw new BadRequestException("이미 가입된 카카오 계정입니다. 로그인 해주세요.");
+        }
+
+        kakaoService.registerKakaoUser(
+                kakaoDTO.getAccountEmail(),
+                request.getNickname(),
+                kakaoDTO.getProfileImageUrl(),
+                Set.copyOf(request.getThemes()),
+                request.getGender(),
+                Language.KOREAN
+        );
+
+        User newUser = userService.getUserByEmail(kakaoDTO.getAccountEmail());
+        userService.setLoginCookie(response, newUser.getEmail());
+
+        kakaoService.authenticateUser(newUser);
+
+        return ResponseEntity.ok(ApiResponse.onSuccess(userService.loginResponse(newUser)));
+    }
+
 }
 

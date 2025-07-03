@@ -12,7 +12,7 @@ public class CustomUserDetails extends org.springframework.security.core.userdet
     public CustomUserDetails(User user) {
         super(
                 user.getEmail(),               // username 으로 이메일
-                user.getPassword(),            // password
+                user.getPassword() != null ? user.getPassword() : "",            // password
                 List.of(new SimpleGrantedAuthority("USER"))
         );
         this.userId = user.getId();

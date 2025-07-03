@@ -18,7 +18,7 @@ public class JwtService {
     public void addAccessTokenCookie(HttpServletResponse response, String userEmail) {
         String token = jwtUtil.generateToken(userEmail);
 
-        response.setHeader("Set-Cookie",
+        response.addHeader("Set-Cookie",
                 "accessToken=" + token + "; Path=/; Max-Age=86400; HttpOnly; SameSite=None; Secure");
 
         System.out.println("JwtService.addAccessTokenCookie: Set-Cookie = accessToken=" + token
