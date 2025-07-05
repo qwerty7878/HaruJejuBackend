@@ -52,7 +52,7 @@ public interface UserService {
 
     void updateNotificationSetting(Long userId, boolean enabled);
 
-    void logoutUser(Long userId);
+    void logoutUser(Long userId, HttpServletResponse response);
 
     void updateNickname(Long userId, String newNickname);
 

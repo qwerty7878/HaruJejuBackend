@@ -326,11 +326,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void logoutUser(Long userId) {
+    public void logoutUser(Long userId, HttpServletResponse response) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BadRequestException("User not found"));
 
         user.setFcmToken(null);
+        jwtService.clearAccessTokenCookie(response);
     }
 
     @Override

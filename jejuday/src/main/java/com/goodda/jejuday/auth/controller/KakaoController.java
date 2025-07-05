@@ -70,7 +70,7 @@ public class KakaoController {
             User user = userService.getUserByEmailOrNull(email);
 
             if (user != null && user.isKakaoLogin()) {
-                userService.logoutUser(user.getId()); // FCM 토큰 제거
+                userService.logoutUser(user.getId(), response); // FCM 토큰 제거
             }
         }
 
