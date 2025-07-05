@@ -117,7 +117,8 @@ public class RegisterController {
                 request.getNickname(),
                 profileImageUrl,
                 themes,
-                gender
+                gender,
+                request.getBirthYear()
         );
 
         userService.setLoginCookie(response, request.getEmail());

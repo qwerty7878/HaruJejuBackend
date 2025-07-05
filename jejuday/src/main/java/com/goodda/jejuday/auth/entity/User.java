@@ -63,6 +63,9 @@ public class User {
     @Column(name = "password", length = 255)
     private String password;
 
+    @Column(name = "birth_Year", length = 4, nullable = false)
+    private String birthYear;
+
     @Column(name = "nickname", length = 20, nullable = false, unique = true)
     private String nickname;
 

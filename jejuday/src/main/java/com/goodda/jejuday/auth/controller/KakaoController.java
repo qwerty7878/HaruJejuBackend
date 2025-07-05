@@ -102,7 +102,8 @@ public class KakaoController {
                 kakaoDTO.getProfileImageUrl(),
                 Set.copyOf(request.getThemes()),
                 request.getGender(),
-                Language.KOREAN
+                Language.KOREAN,
+                request.getBirthYear()
         );
 
         User newUser = userService.getUserByEmail(kakaoDTO.getAccountEmail());

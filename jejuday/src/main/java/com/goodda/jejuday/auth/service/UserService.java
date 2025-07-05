@@ -33,15 +33,18 @@ public interface UserService {
 
     void saveTemporaryUser(String name, String email, String password, Platform platform, Language language);
 
-    void completeFinalRegistration(String email, String nickname, String profile, Set<String> themeNames, Gender gender);
+    void completeFinalRegistration(String email, String nickname, String profile, Set<String> themeNames, Gender gender,
+                                   String birthYear);
 
-    void completeRegistration(String email, String nickname, String profile, Set<UserTheme> userThemes, Gender gender);
+    void completeRegistration(String email, String nickname, String profile, Set<UserTheme> userThemes, Gender gender,
+                              String birthYear);
 
     void deleteUsers(String email);
 
     void updateUserLanguage(Long userId, Language language);
 
     boolean existsByEmail(String email);
+
     boolean existsByNickname(String nickname);
 
     Long getAuthenticatedUserId();

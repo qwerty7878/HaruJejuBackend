@@ -92,6 +92,7 @@ public class UserServiceImpl implements UserService {
                 .email(user.getEmail())
                 .nickname(user.getNickname())
                 .profile(user.getProfile())
+                .birthYear(user.getBirthYear())
                 .language(user.getLanguage())
                 .platform(user.getPlatform())
                 .themes(user.getUserThemes().stream()
@@ -210,7 +211,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void completeFinalRegistration(String email, String nickname, String profile, Set<String> themeNames,
-                                          Gender gender) {
+                                          Gender gender, String birthYear) {
 
         if (userRepository.existsByNickname(nickname)) {
             throw new BadRequestException("이미 사용 중인 닉네임 입니다!");
@@ -223,14 +224,14 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toSet())
                 : Set.of();
 
-        completeRegistration(email, nickname, profile, userThemes, gender);
+        completeRegistration(email, nickname, profile, userThemes, gender, birthYear);
     }
 
 
     @Override
     @Transactional
     public void completeRegistration(String email, String nickname, String profile, Set<UserTheme> userThemes,
-                                     Gender gender) {
+                                     Gender gender, String birthYear) {
         TemporaryUser tempUser = temporaryUserRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("임시 사용자를 찾을 수 없습니다."));
 
@@ -242,6 +243,7 @@ public class UserServiceImpl implements UserService {
                 .platform(Platform.APP)
                 .language(tempUser.getLanguage())
                 .gender(gender)
+                .birthYear(birthYear)
                 .profile(profile != null ? profile : tempUser.getProfile())
                 .userThemes(userThemes)
                 .createdAt(LocalDateTime.now())

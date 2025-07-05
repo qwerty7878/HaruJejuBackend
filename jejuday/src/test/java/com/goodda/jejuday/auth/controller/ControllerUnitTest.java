@@ -3,6 +3,7 @@ package com.goodda.jejuday.auth.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -23,6 +24,7 @@ import com.goodda.jejuday.auth.repository.UserRepository;
 import com.goodda.jejuday.auth.security.JwtService;
 import com.goodda.jejuday.auth.service.EmailService;
 import com.goodda.jejuday.auth.service.EmailVerificationService;
+import com.goodda.jejuday.auth.service.KakaoService;
 import com.goodda.jejuday.auth.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
@@ -45,6 +47,9 @@ class ControllerUnitTest {
     private UserService userService;
     @Mock
     private EmailService emailService;
+
+    @Mock
+    private KakaoService kakaoService;
     @Mock
     private JwtService jwtService;
 
@@ -112,6 +117,7 @@ class ControllerUnitTest {
                 .email("hi@hi.com")
                 .nickname("닉네임")
                 .themes(List.of("산책", "휴식"))
+                .birthYear("1950")
                 .build();
 
         MultipartFile file = mock(MultipartFile.class);
@@ -123,13 +129,18 @@ class ControllerUnitTest {
 
         when(userService.uploadProfileImage(file)).thenReturn("https://profile/pic.jpg");
 
+        User mockUser = User.builder().email("hi@hi.com").build();
+        when(userService.getUserByEmail("hi@hi.com")).thenReturn(mockUser);
+        doNothing().when(kakaoService).authenticateUser(any(User.class));
+
         ResponseEntity<ApiResponse<LoginResponse>> res = registerController.completeRegistration(req, file, Gender.MALE,
                 response);
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         verify(userService).completeFinalRegistration(eq("hi@hi.com"), eq("닉네임"), eq("https://profile/pic.jpg"), any(),
-                any());
+                any(), eq("1950"));
         verify(userService).setLoginCookie(response, "hi@hi.com");
+        verify(kakaoService).authenticateUser(mockUser);
     }
 
     @Test

@@ -20,6 +20,7 @@ public class LoginResponse {
     private String nickname;
     private String profile;
     private List<String> themes;
+    private String birthYear;
 
     private Language language;
     private Platform platform;

@@ -18,6 +18,7 @@ public class FinalAppRegisterResponse {
     private String email;
     private String nickname;
     private List<String> themes;
+    private String birthYear;
     private String message;
     private Gender gender;
 }
