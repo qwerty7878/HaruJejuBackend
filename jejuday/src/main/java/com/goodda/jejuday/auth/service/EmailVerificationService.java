@@ -15,4 +15,6 @@ public interface EmailVerificationService {
     boolean verifyTemporaryUserCode(String email, String code);
 
     boolean verifyUserCode(String email, String code);
+
+    boolean isTemporaryUserVerified(String email);
 }

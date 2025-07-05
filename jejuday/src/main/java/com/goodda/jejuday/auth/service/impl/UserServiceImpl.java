@@ -17,6 +17,7 @@ import com.goodda.jejuday.auth.repository.TemporaryUserRepository;
 import com.goodda.jejuday.auth.repository.UserRepository;
 import com.goodda.jejuday.auth.repository.UserThemeRepository;
 import com.goodda.jejuday.auth.security.JwtService;
+import com.goodda.jejuday.auth.service.EmailVerificationService;
 import com.goodda.jejuday.auth.service.TemporaryUserService;
 import com.goodda.jejuday.auth.service.UserService;
 import com.goodda.jejuday.auth.util.exception.BadRequestException;
@@ -51,6 +52,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TemporaryUserRepository temporaryUserRepository;
+    private final EmailVerificationService emailVerificationService;
     private final EmailVerificationRepository emailVerificationRepository;
     private final UserThemeRepository userThemeRepository;
 
@@ -212,6 +214,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void completeFinalRegistration(String email, String nickname, String profile, Set<String> themeNames,
                                           Gender gender, String birthYear) {
+        if (!emailVerificationService.isTemporaryUserVerified(email)) {
+            throw new BadRequestException("이메일 인증이 완료되지 않았습니다.");
+        }
 
         if (userRepository.existsByNickname(nickname)) {
             throw new BadRequestException("이미 사용 중인 닉네임 입니다!");
