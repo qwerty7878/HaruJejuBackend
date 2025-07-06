@@ -24,15 +24,17 @@ jobs:
 
       - name: Grant execute permission for Gradle Wrapper
         run: chmod +x gradlew
+        working-directory: jejuday
 
       - name: Build with Gradle
         run: ./gradlew build
+        working-directory: jejuday
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: build/libs/*.jar
+          path: jejuday/build/libs/*.jar
 
   deploy:
     runs-on: ubuntu-latest
