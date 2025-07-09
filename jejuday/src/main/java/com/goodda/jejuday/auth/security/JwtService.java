@@ -10,30 +10,30 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class JwtService {
 
-    // 쿠키 만료 시간 (초 단위, 여기서는 2일)
-    private static final int ACCESS_TOKEN_EXPIRATION_SECONDS = 1000 * 60 * 60 * 48;;
-
     private final JwtUtil jwtUtil;
+    private final CookieUtil cookieUtil;
 
     public void addAccessTokenCookie(HttpServletResponse response, String userEmail) {
         String token = jwtUtil.generateToken(userEmail);
 
-        response.addHeader("Set-Cookie",
-                "accessToken=" + token + "; Path=/; Max-Age=86400; HttpOnly; SameSite=None; Secure");
+        // 기존 쿠키 먼저 삭제
+        clearAccessTokenCookie(response);
 
-        System.out.println("JwtService.addAccessTokenCookie: Set-Cookie = accessToken=" + token
-                + "; Path=/; Max-Age=86400; HttpOnly; SameSite=None; Secure");
+        // CookieUtil 사용하여 일관성 있는 쿠키 설정
+        cookieUtil.addJwtCookie(response,
+                CookieRule.ACCESS_TOKEN_NAME.getValue(),
+                token,
+                true); // secure 설정
+
+        System.out.println("새로운 JWT 토큰 쿠키 설정 완료: " + token.substring(0, 20) + "...");
     }
 
     public void clearAccessTokenCookie(HttpServletResponse response) {
-        ResponseCookie expiredCookie = ResponseCookie.from(CookieRule.ACCESS_TOKEN_NAME.getValue(), "")
-                .httpOnly(true)
-                .secure(false) // 개발환경
-                .path("/")
-                .sameSite("None")
-                .maxAge(0)
-                .build();
+        // CookieUtil 사용하여 일관성 있는 쿠키 삭제
+        cookieUtil.clearJwtCookie(response,
+                CookieRule.ACCESS_TOKEN_NAME.getValue(),
+                true); // secure 설정
 
-        response.addHeader("Set-Cookie", expiredCookie.toString());
+        System.out.println("JWT 쿠키 삭제 완료");
     }
 }

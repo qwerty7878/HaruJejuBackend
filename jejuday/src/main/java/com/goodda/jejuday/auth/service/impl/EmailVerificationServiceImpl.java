@@ -93,4 +93,13 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
         emailVerificationRepository.delete(verification);
         return true;
     }
+
+    @Override
+    public boolean isTemporaryUserVerified(String email) {
+        TemporaryUser temporaryUser = temporaryUserRepository.findByEmail(email)
+                .orElseThrow(() -> new EmailSendingException("임시 사용자가 존재하지 않습니다."));
+
+        return emailVerificationRepository.findTopByTemporaryUserAndIsVerifiedTrueOrderByCreatedAtDesc(temporaryUser)
+                .isPresent();
+    }
 }

@@ -44,10 +44,8 @@ public class UserServiceTest {
     private UserRepository userRepository;
     @Mock
     private TemporaryUserRepository temporaryUserRepository;
-
     @Mock
     private UserThemeRepository userThemeRepository;
-
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
@@ -177,7 +175,7 @@ public class UserServiceTest {
         when(temporaryUserRepository.findByEmail("email@test.com")).thenReturn(Optional.of(temp));
         when(userRepository.existsByNickname("nickname")).thenReturn(false);
 
-        userService.completeFinalRegistration("email@test.com", "nickname", "profileUrl", Set.of("산책"), Gender.MALE);
+        userService.completeFinalRegistration("email@test.com", "nickname", "profileUrl", Set.of("산책"), Gender.MALE, "1950");
 
         verify(emailVerificationRepository).deleteByTemporaryUser_TemporaryUserId(1L);
         verify(temporaryUserRepository).delete(temp);

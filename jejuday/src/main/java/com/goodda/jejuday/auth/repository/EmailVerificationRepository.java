@@ -13,6 +13,8 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
     Optional<EmailVerification> findTopByTemporaryUserAndIsVerifiedFalseOrderByCreatedAtDesc(
             TemporaryUser temporaryUser);   //  아직 인증되지 않은 코드 조회
 
+    Optional<EmailVerification> findTopByTemporaryUserAndIsVerifiedTrueOrderByCreatedAtDesc(
+            TemporaryUser temporaryUser);
     void deleteByTemporaryUser_TemporaryUserId(Long temporaryUserId);   //  인증 실패 누적 후 삭제
 
     void deleteByTemporaryUser_Email(String email); //  회원가입 취소 또는 만료 시 삭제

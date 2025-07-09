@@ -25,7 +25,7 @@ public class CookieUtil {
                 .secure(secure)
                 .path("/")
                 .sameSite("None")
-                .maxAge(1000 * 60 * 60 * 48) // 2일
+                .maxAge(172800) // 2일
                 .build();
 
         response.addHeader("Set-Cookie", cookie.toString());

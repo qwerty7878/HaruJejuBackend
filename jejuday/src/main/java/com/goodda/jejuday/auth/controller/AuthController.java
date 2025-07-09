@@ -85,7 +85,7 @@ public class AuthController {
             String email = userDetails.getUsername();
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
-            userService.logoutUser(user.getId());
+            userService.logoutUser(user.getId(), response);
         }
 
         return ResponseEntity.ok(ApiResponse.onSuccess("로그아웃 성공"));

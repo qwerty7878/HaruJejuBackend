@@ -179,7 +179,7 @@ public class KakaoService {
 
     @Transactional
     public void registerKakaoUser(String email, String nickname, String profileUrl,
-                                  Set<String> themeNames, Gender gender, Language language) {
+                                  Set<String> themeNames, Gender gender, Language language, String birthYear) {
 
         if (userRepository.existsByNickname(nickname)) {
             throw new BadRequestException("이미 사용 중인 닉네임입니다.");
@@ -200,6 +200,7 @@ public class KakaoService {
                 .platform(Platform.KAKAO)
                 .language(language)
                 .gender(gender)
+                .birthYear(birthYear)
                 .profile(profileUrl)
                 .userThemes(userThemes)
                 .createdAt(LocalDateTime.now())
