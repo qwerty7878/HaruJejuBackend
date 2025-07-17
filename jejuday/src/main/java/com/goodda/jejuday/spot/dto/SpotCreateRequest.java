@@ -1,5 +1,6 @@
 package com.goodda.jejuday.spot.dto;
 
+import com.goodda.jejuday.spot.entity.Spot;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -10,5 +11,4 @@ public class SpotCreateRequest {
     private String description;
     private BigDecimal latitude;
     private BigDecimal longitude;
-    private String type; // SPOT or CHALLENGE
 }

@@ -35,34 +35,49 @@ public class SpotServiceImpl implements SpotService {
     public List<SpotResponse> getNearbySpots(BigDecimal lat, BigDecimal lng, int radiusKm) {
         List<Spot> spots = spotRepository.findWithinRadius(lat, lng, radiusKm);
         return spots.stream()
-                .map(spot -> new SpotResponse(spot.getId(), spot.getName(), spot.getLatitude(), spot.getLongitude(),
-                        likeRepository.countByTargetIdAndTargetType(spot.getId(), "SPOT"), false))
+                .filter(spot -> spot.getType() == Spot.SpotType.SPOT || spot.getType() == Spot.SpotType.CHALLENGE)
+                .map(spot -> SpotResponse.fromEntity(
+                        spot,
+                        likeRepository.countByTargetIdAndTargetType(spot.getId(), Like.TargetType.SPOT),
+                        false // 홈에서는 로그인 안 해도 됨
+                ))
                 .collect(Collectors.toList());
     }
 
     @Override
     public SpotDetailResponse getSpotDetail(Long id, User user) {
-        Spot spot = spotRepository.findById(id).orElseThrow(() -> new RuntimeException("Not found"));
-        int likeCount = likeRepository.countByTargetIdAndTargetType(id, "SPOT");
-        boolean liked = likeRepository.existsByUserIdAndTargetTypeAndTargetId(user.getId(), "SPOT", id);
+        Spot spot = spotRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Spot not found"));
+        int likeCount = likeRepository.countByTargetIdAndTargetType(id, Like.TargetType.SPOT);
+        boolean liked = likeRepository.existsByUserIdAndTargetTypeAndTargetId(user.getId(), Like.TargetType.SPOT, id);
         boolean bookmarked = bookmarkRepository.existsByUserIdAndSpotId(user.getId(), id);
-        return new SpotDetailResponse(id, spot.getName(), spot.getLatitude(), spot.getLongitude(), likeCount, liked, spot.getDescription(), new ArrayList<>(), 0, bookmarked);
+
+        return new SpotDetailResponse(spot, likeCount, liked, bookmarked);
     }
 
     @Override
     public Long createSpot(SpotCreateRequest request, User user) {
-        Spot spot = new Spot(request.getName(), request.getDescription(), request.getLatitude(), request.getLongitude(), user, request.getType());
+        Spot spot = new Spot(request.getName(), request.getDescription(), request.getLatitude(), request.getLongitude(), user);
         return spotRepository.save(spot).getId();
     }
 
     @Override
     public void updateSpot(Long id, SpotUpdateRequest request, User user) {
-        Spot spot = spotRepository.findById(id).orElseThrow();
-        if (!Objects.equals(spot.getUser().getId(), user.getId())) throw new SecurityException();
+//        if (user == null || user.getId() == null) {
+//            throw new SecurityException("로그인한 사용자만 수정할 수 있습니다.");
+//        }
+
+        Spot spot = spotRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("해당 Spot 을 찾을 수 없습니다."));
+
+        if (!Objects.equals(spot.getUser().getId(), user.getId())) {
+            throw new SecurityException("본인의 Spot 만 수정할 수 있습니다.");
+        }
+
         spot.setName(request.getName());
         spot.setDescription(request.getDescription());
         spot.setLatitude(BigDecimal.valueOf(request.getLatitude()));
         spot.setLongitude(BigDecimal.valueOf(request.getLongitude()));
+
         spotRepository.save(spot);
     }
 
@@ -79,7 +94,7 @@ public class SpotServiceImpl implements SpotService {
 
     @Override
     public void likeSpot(Long id, User user) {
-        if (!likeRepository.existsByUserIdAndTargetTypeAndTargetId(user.getId(), "SPOT", id)) {
+        if (!likeRepository.existsByUserIdAndTargetTypeAndTargetId(user.getId(), Like.TargetType.SPOT, id)) {
             Spot spot = spotRepository.findById(id)
                     .orElseThrow(() -> new EntityNotFoundException("Spot not found"));
             likeRepository.save(new Like(user, spot, Like.TargetType.SPOT));
@@ -88,7 +103,7 @@ public class SpotServiceImpl implements SpotService {
 
     @Override
     public void unlikeSpot(Long id, User user) {
-        likeRepository.deleteByUserIdAndTargetTypeAndTargetId(user.getId(), "SPOT", id);
+        likeRepository.deleteByUserIdAndTargetTypeAndTargetId(user.getId(), Like.TargetType.SPOT, id);
     }
 
 //    @Override

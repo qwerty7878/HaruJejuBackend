@@ -73,25 +73,21 @@ public class Spot {
         this.id = id;
     }
 
-    public Spot(String name, String description, BigDecimal latitude, BigDecimal longitude, User referenceById, String type) {
+    public Spot(String name, String description, BigDecimal latitude, BigDecimal longitude, User user) {
         this.name = name;
         this.description = description;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.user = referenceById;
-        try {
-            this.type = SpotType.valueOf(type.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new InvalidParameterException("유효하지 않은 SpotType 입니다: " + type);
-        }
+        this.user = user;
+        this.type = SpotType.POST; // 기본값으로 POST
     }
 
     public Spot() {
 
     }
 
-    public enum SpotType {          // 유저가 올린 스팟 -> 지도에 위치마커 띄울 스팟 -> 챌린저
-        SPOT, POST, CHALLENGE
+    public enum SpotType {          // 유저가 올린 스팟(POST) -> 지도에 위치마커 띄울 스팟(SPOT) -> 챌린저(CHALLENGE)
+        POST, SPOT, CHALLENGE
     }
 
     // 작성 주체: true = 유저가 작성, false = 운영자 작성

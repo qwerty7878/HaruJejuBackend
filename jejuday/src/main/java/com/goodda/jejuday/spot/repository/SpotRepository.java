@@ -9,6 +9,18 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public interface SpotRepository extends JpaRepository<Spot, Long> {
-    @Query("SELECT s FROM Spot s WHERE s.isDeleted = false AND FUNCTION('distance', s.latitude, s.longitude, :lat, :lng) <= :radius")
+    @Query(value = """
+    SELECT * FROM spot s
+    WHERE s.is_deleted = false AND (
+        6371 * acos(
+            cos(radians(:lat)) *
+            cos(radians(s.latitude)) *
+            cos(radians(s.longitude) - radians(:lng)) +
+            sin(radians(:lat)) *
+            sin(radians(s.latitude))
+        )
+    ) <= :radius
+""", nativeQuery = true)
     List<Spot> findWithinRadius(@Param("lat") BigDecimal lat, @Param("lng") BigDecimal lng, @Param("radius") int radius);
+
 }

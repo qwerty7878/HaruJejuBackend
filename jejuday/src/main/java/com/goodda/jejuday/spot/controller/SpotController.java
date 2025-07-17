@@ -1,5 +1,6 @@
 package com.goodda.jejuday.spot.controller;
 
+import com.goodda.jejuday.auth.dto.ApiResponse;
 import com.goodda.jejuday.auth.entity.User;
 import com.goodda.jejuday.spot.dto.SpotCreateRequest;
 import com.goodda.jejuday.spot.dto.SpotDetailResponse;
@@ -7,6 +8,7 @@ import com.goodda.jejuday.spot.dto.SpotResponse;
 import com.goodda.jejuday.spot.dto.SpotUpdateRequest;
 import com.goodda.jejuday.spot.service.SpotService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,12 +23,13 @@ public class SpotController {
 
 
     // 1. 바텀네비 홈화면에서 위치 마커 띄우는 3안
-    // 1)
-    @GetMapping("/nearby")          // 홈화면에서 뛰울 위치 기반 위치 마커 read
-    public List<SpotResponse> getNearbySpots(@RequestParam BigDecimal lat,
-                                             @RequestParam BigDecimal lng,
-                                             @RequestParam(defaultValue = "5") int radiusKm) {
-        return spotService.getNearbySpots(lat, lng, radiusKm);
+    // // 홈화면에서 뛰울 위치 기반 위치 마커 read
+    @GetMapping("/nearby")
+    public ResponseEntity<ApiResponse<List<SpotResponse>>> getNearbySpots(@RequestParam BigDecimal lat,
+                                                                          @RequestParam BigDecimal lng,
+                                                                          @RequestParam(defaultValue = "5") int radiusKm) {
+        List<SpotResponse> spots = spotService.getNearbySpots(lat, lng, radiusKm);
+        return ResponseEntity.ok(ApiResponse.onSuccess(spots));
     }
 
     // 유저가 결정, Where 절에 넣어서 필터링, 근방 몇 km 까지?
@@ -36,9 +39,10 @@ public class SpotController {
 
     // 위치 마커 클릭 시 상세 정보 보여주기
     @GetMapping("/{id}")
-    public SpotDetailResponse getSpotDetail(@PathVariable Long id,
-                                            @AuthenticationPrincipal User user) {
-        return spotService.getSpotDetail(id, user);
+    public ResponseEntity<ApiResponse<SpotDetailResponse>> getSpotDetail(@PathVariable Long id,
+                                                                         @AuthenticationPrincipal User user) {
+        SpotDetailResponse detail = spotService.getSpotDetail(id, user);
+        return ResponseEntity.ok(ApiResponse.onSuccess(detail));
     }
     
     // 사용자가 커뮤니티(바텀 네비게이션)를 통해서 spot 장소 등록
@@ -53,10 +57,11 @@ public class SpotController {
     // TODO 위치 마커 수정할때 전에 등록했던 정보를 가지고 오는 Controller 추가 필요
     // 사용자 위치 마커 수정 ( 위치가 잘못 되었을 때, or 내용 수정을 원할때 )
     @PutMapping("/{id}")
-    public void updateSpot(@PathVariable Long id,
-                           @RequestBody SpotUpdateRequest request,
-                           @AuthenticationPrincipal User user) {
+    public ResponseEntity<Void> updateSpot(@PathVariable Long id,
+                                           @RequestBody SpotUpdateRequest request,
+                                           @AuthenticationPrincipal User user) {
         spotService.updateSpot(id, request, user);
+        return ResponseEntity.noContent().build(); // 204 No Content
     }
 
     // 커뮤니티에 등록된 Spot 장소 삭제,
