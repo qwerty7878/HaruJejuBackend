@@ -1,6 +1,8 @@
 package com.goodda.jejuday.spot.service;
 
 import com.goodda.jejuday.auth.entity.User;
+import com.goodda.jejuday.auth.repository.UserRepository;
+import com.goodda.jejuday.auth.util.SecurityUtil;
 import com.goodda.jejuday.spot.dto.SpotCreateRequest;
 import com.goodda.jejuday.spot.dto.SpotDetailResponse;
 import com.goodda.jejuday.spot.dto.SpotResponse;
@@ -27,82 +29,98 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SpotServiceImpl implements SpotService {
     private final SpotRepository spotRepository;
-//    private final UserRepository userRepository;
     private final LikeRepository likeRepository;
     private final BookmarkRepository bookmarkRepository;
+//    private final UserRepository userRepository;
+    private final SecurityUtil securityUtil;
+
 
     @Override
     public List<SpotResponse> getNearbySpots(BigDecimal lat, BigDecimal lng, int radiusKm) {
-        List<Spot> spots = spotRepository.findWithinRadius(lat, lng, radiusKm);
-        return spots.stream()
-                .filter(spot -> spot.getType() == Spot.SpotType.SPOT || spot.getType() == Spot.SpotType.CHALLENGE)
-                .map(spot -> SpotResponse.fromEntity(
-                        spot,
-                        likeRepository.countByTargetIdAndTargetType(spot.getId(), Like.TargetType.SPOT),
-                        false // 홈에서는 로그인 안 해도 됨
+        return spotRepository.findWithinRadius(lat, lng, radiusKm).stream()
+                .filter(s -> s.getType() == Spot.SpotType.SPOT || s.getType() == Spot.SpotType.CHALLENGE)
+                .map(s -> SpotResponse.fromEntity(
+                        s,
+                        likeRepository.countByTargetIdAndTargetType(s.getId(), Like.TargetType.SPOT),
+                        false
                 ))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public SpotDetailResponse getSpotDetail(Long id, User user) {
-        Spot spot = spotRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Spot not found"));
+    @Transactional
+    public Long createSpot(SpotCreateRequest req) {
+        User user = securityUtil.getAuthenticatedUser();
+        Spot s = new Spot(
+                req.getName(),
+                req.getDescription(),
+                req.getLatitude(),
+                req.getLongitude(),
+                user
+        );
+        return spotRepository.save(s).getId();
+    }
+
+
+    @Override
+    public SpotDetailResponse getSpotDetail(Long id) {
+        User user = securityUtil.getAuthenticatedUser();
+        Spot s = spotRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Spot not found"));
         int likeCount = likeRepository.countByTargetIdAndTargetType(id, Like.TargetType.SPOT);
         boolean liked = likeRepository.existsByUserIdAndTargetTypeAndTargetId(user.getId(), Like.TargetType.SPOT, id);
         boolean bookmarked = bookmarkRepository.existsByUserIdAndSpotId(user.getId(), id);
-
-        return new SpotDetailResponse(spot, likeCount, liked, bookmarked);
+        return new SpotDetailResponse(s, likeCount, liked, bookmarked);
     }
 
-    @Override
-    public Long createSpot(SpotCreateRequest request, User user) {
-        Spot spot = new Spot(request.getName(), request.getDescription(), request.getLatitude(), request.getLongitude(), user);
-        return spotRepository.save(spot).getId();
-    }
 
     @Override
-    public void updateSpot(Long id, SpotUpdateRequest request, User user) {
-//        if (user == null || user.getId() == null) {
-//            throw new SecurityException("로그인한 사용자만 수정할 수 있습니다.");
-//        }
-
-        Spot spot = spotRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("해당 Spot 을 찾을 수 없습니다."));
-
-        if (!Objects.equals(spot.getUser().getId(), user.getId())) {
-            throw new SecurityException("본인의 Spot 만 수정할 수 있습니다.");
+    @Transactional
+    public void updateSpot(Long id, SpotUpdateRequest req) {
+        User user = securityUtil.getAuthenticatedUser();
+        Spot s = spotRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Spot not found"));
+        if (!Objects.equals(s.getUser().getId(), user.getId())) {
+            throw new SecurityException("본인의 Spot만 수정할 수 있습니다.");
         }
-
-        spot.setName(request.getName());
-        spot.setDescription(request.getDescription());
-        spot.setLatitude(BigDecimal.valueOf(request.getLatitude()));
-        spot.setLongitude(BigDecimal.valueOf(request.getLongitude()));
-
-        spotRepository.save(spot);
+        s.setName(req.getName());
+        s.setDescription(req.getDescription());
+        s.setLatitude(req.getLatitude());
+        s.setLongitude(req.getLongitude());
+        spotRepository.save(s);
     }
 
 
     @Override
-    public void deleteSpot(Long id, User user) {
-        Spot spot = spotRepository.findById(id).orElseThrow();
-        if (!Objects.equals(spot.getUser().getId(), user.getId())) throw new SecurityException();
-        spot.setIsDeleted(true);
-        spot.setDeletedAt(LocalDateTime.now());
-        spot.setDeletedBy(user.getId());
-        spotRepository.save(spot);
+    @Transactional
+    public void deleteSpot(Long id) {
+        User user = securityUtil.getAuthenticatedUser();
+        Spot s = spotRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Spot not found"));
+        if (!Objects.equals(s.getUser().getId(), user.getId())) {
+            throw new SecurityException("본인의 Spot만 삭제할 수 있습니다.");
+        }
+        s.setIsDeleted(true);
+        s.setDeletedAt(LocalDateTime.now());
+        s.setDeletedBy(user.getId());
+        spotRepository.save(s);
     }
 
     @Override
-    public void likeSpot(Long id, User user) {
+    @Transactional
+    public void likeSpot(Long id) {
+        User user = securityUtil.getAuthenticatedUser();
         if (!likeRepository.existsByUserIdAndTargetTypeAndTargetId(user.getId(), Like.TargetType.SPOT, id)) {
-            Spot spot = spotRepository.findById(id)
+            Spot s = spotRepository.findById(id)
                     .orElseThrow(() -> new EntityNotFoundException("Spot not found"));
-            likeRepository.save(new Like(user, spot, Like.TargetType.SPOT));
+            likeRepository.save(new Like(user, s, Like.TargetType.SPOT));
         }
     }
 
     @Override
-    public void unlikeSpot(Long id, User user) {
+    @Transactional
+    public void unlikeSpot(Long id) {
+        User user = securityUtil.getAuthenticatedUser();
         likeRepository.deleteByUserIdAndTargetTypeAndTargetId(user.getId(), Like.TargetType.SPOT, id);
     }
 
@@ -119,18 +137,22 @@ public class SpotServiceImpl implements SpotService {
 //        }
 //    }
 
+
     @Override
     @Transactional
-    public void bookmarkSpot(Long spotId, User user) {
-        if (!bookmarkRepository.existsByUserIdAndSpotId(user.getId(), spotId)) {
-            Spot spot = spotRepository.findById(spotId)
+    public void bookmarkSpot(Long id) {
+        User user = securityUtil.getAuthenticatedUser();
+        if (!bookmarkRepository.existsByUserIdAndSpotId(user.getId(), id)) {
+            Spot s = spotRepository.findById(id)
                     .orElseThrow(() -> new EntityNotFoundException("Spot not found"));
-            bookmarkRepository.save(new Bookmark(user, spot));
+            bookmarkRepository.save(new Bookmark(user, s));
         }
     }
 
     @Override
-    public void unbookmarkSpot(Long id, User user) {
+    @Transactional
+    public void unbookmarkSpot(Long id) {
+        User user = securityUtil.getAuthenticatedUser();
         bookmarkRepository.deleteByUserIdAndSpotId(user.getId(), id);
     }
 }

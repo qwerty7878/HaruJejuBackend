@@ -90,8 +90,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler())
                 );
 
-        // 🔒 주석처리: JWT 필터 비활성화 (지금은 인증 안 씀)
-        // http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

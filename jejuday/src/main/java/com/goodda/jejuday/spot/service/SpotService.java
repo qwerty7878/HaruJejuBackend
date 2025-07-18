@@ -9,12 +9,12 @@ import java.util.List;
 
 public interface SpotService {
     List<SpotResponse> getNearbySpots(BigDecimal lat, BigDecimal lng, int radiusKm);
-    SpotDetailResponse getSpotDetail(Long id, User user);
-    Long createSpot(SpotCreateRequest request, User user);
-    void updateSpot(Long id, SpotUpdateRequest request, User user);
-    void deleteSpot(Long id, User user);
-    void likeSpot(Long id, User user);
-    void unlikeSpot(Long id, User user);
-    void bookmarkSpot(Long id, User user);
-    void unbookmarkSpot(Long id, User user);
+    SpotDetailResponse getSpotDetail(Long id);
+    Long createSpot(SpotCreateRequest request);
+    void updateSpot(Long id, SpotUpdateRequest request);
+    void deleteSpot(Long id);
+    void likeSpot(Long id);
+    void unlikeSpot(Long id);
+    void bookmarkSpot(Long id);
+    void unbookmarkSpot(Long id);
 }
