@@ -98,6 +98,8 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<NotificationEntity> notifications;
 
+//    @Builder.Default
     @Column(name = "hallabong", nullable = false)
+//    private int hallabong = 50000;    테스트용
     private int hallabong;
 }
