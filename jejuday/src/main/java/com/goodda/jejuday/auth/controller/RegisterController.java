@@ -67,12 +67,15 @@ public class RegisterController {
     @PostMapping("/app")
     public ResponseEntity<ApiResponse<String>> registerAppUser(@Valid @RequestBody TempAppRegisterRequest request,
                                                                @CookieValue(value = "language", required = false) Language language) {
+
+        Language resolvedLanguage = language != null ? language : Language.KOREAN;
+
         userService.saveTemporaryUser(
                 request.getName(),
                 request.getEmail(),
                 request.getPassword(),
                 Platform.APP,
-                language
+                resolvedLanguage
         );
         return new ResponseEntity<>(ApiResponse.onSuccess("임시 사용자 저장 완료"), HttpStatus.CREATED);
     }
