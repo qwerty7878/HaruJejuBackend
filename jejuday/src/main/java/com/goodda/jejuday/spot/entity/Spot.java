@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Spot")
+@Table(name = "spot")
 @Getter @Setter
 public class Spot {
 
@@ -32,24 +32,36 @@ public class Spot {
     @Lob
     private String description;
 
-    @Column(length = 200)
+    // @Column(nullable = false, precision = 10, scale = 7) // 정밀도 필요하실 채택, precision : 전체 몇자리, scale : 소수점 몇자리
+    @Column(nullable = false, precision = 9, scale = 6)
     private BigDecimal latitude;
 
-    @Column(length = 200)
+    // @Column(nullable = false, precision = 10, scale = 7)
+    @Column(nullable = false, precision = 9, scale = 6)
     private BigDecimal  longitude;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
-    
+
+    // 누적 조회 수 (denormalized)
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer viewCount = 0;
+
+    // 누적 좋아요 수 (denormalized)
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer likeCount = 0;
+
+    //
     @Column(name = "start_date")
     private LocalDate startDate;
-    
+
     @Column(name = "end_date")
     private LocalDate endDate;
-    
-    private Integer point = 0;
-    
+
+    @Column(name = "point", columnDefinition = "INT DEFAULT 0")
+    private Integer point = 0;  // user 의 한라봉과 외래키 관계.
+
     @Column(name = "is_deleted", columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean isDeleted = false;
     
@@ -81,7 +93,6 @@ public class Spot {
     }
 
     public Spot() {
-
     }
 
     public enum SpotType {          // 유저가 올린 스팟(POST) -> 지도에 위치마커 띄울 스팟(SPOT) -> 챌린저(CHALLENGE)
