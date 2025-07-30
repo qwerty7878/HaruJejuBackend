@@ -40,7 +40,9 @@ public class AttendanceService {
         saveAttendanceRecord(user, today, consecutiveDays);
         hallabongService.addHallabong(userId, reward.total());
 
-        return AttendanceResult.ofSuccess(consecutiveDays, reward.base(), reward.bonus());
+        int totalHallabong = hallabongService.getHallabong(userId);
+
+        return AttendanceResult.ofSuccess(consecutiveDays, reward.base(), reward.bonus(), totalHallabong);
     }
 
     private boolean isAlreadyChecked(Long userId, LocalDate date) {
