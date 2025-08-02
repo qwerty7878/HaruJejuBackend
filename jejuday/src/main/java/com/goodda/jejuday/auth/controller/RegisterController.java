@@ -65,14 +65,14 @@ public class RegisterController {
 
     @Operation(summary = "일반 임시 사용자 등록", description = "앱 회원가입 시 임시 사용자로 저장합니다.")
     @PostMapping("/app")
-    public ResponseEntity<ApiResponse<String>> registerAppUser(@Valid @RequestBody TempAppRegisterRequest request,
-                                                               @CookieValue(value = "language", required = false) Language language) {
+    public ResponseEntity<ApiResponse<String>> registerAppUser(@Valid @RequestBody TempAppRegisterRequest request) {
+
         userService.saveTemporaryUser(
                 request.getName(),
                 request.getEmail(),
                 request.getPassword(),
                 Platform.APP,
-                language
+                Language.KOREAN
         );
         return new ResponseEntity<>(ApiResponse.onSuccess("임시 사용자 저장 완료"), HttpStatus.CREATED);
     }

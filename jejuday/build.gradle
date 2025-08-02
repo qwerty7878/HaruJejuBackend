@@ -36,6 +36,8 @@ dependencies {
     //mysql
     runtimeOnly 'com.mysql:mysql-connector-j'
 
+    implementation 'org.postgresql:postgresql:42.7.3'
+
     // firebase
     implementation 'com.google.firebase:firebase-admin:9.1.1'
 

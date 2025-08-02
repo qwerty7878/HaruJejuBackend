@@ -60,7 +60,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email: " + email));
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다." + email));
     }
 
     @Override
@@ -320,7 +320,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new BadRequestException("User not found with id: " + userId));
+                .orElseThrow(() -> new BadRequestException("사용자를 찾을 수 없습니다.: " + userId));
     }
 
     @Override
