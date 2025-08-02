@@ -41,7 +41,7 @@ public class SpotCommunitySearchController {
                         .viewCount(s.getViewCount())
                         .type(s.getType())
                         .authorNickname(s.getUser().getNickname())
-                        .createdAt(s.getCreatedAt())
+                        .createdAt(s.getCreatedAt().toString())
                         .build()
                 );
 
