@@ -1,5 +1,6 @@
 package com.goodda.jejuday.spot.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -31,10 +32,10 @@ public class ReplyResponse {
     @Schema(description = "소프트 삭제 여부", example = "false")
     private Boolean isDeleted;
 
-    @Schema(description = "작성 시각", example = "2025-07-18T18:00:00")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 
-    @Schema(description = "수정 시각 (수정 안 했으면 작성 시각과 같거나 null)", example = "2025-07-18T18:10:00", nullable = true)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
 
     // 필요하면 상대시간 필드도 추가 가능

@@ -16,39 +16,60 @@ public class SpotCommentController {
 
     private final SpotCommentService commentService;
 
+    // 0-1. 최상위 댓글 페이징 조회
+    @GetMapping
+    public ResponseEntity<ReplyPageResponse> getComments(
+            @PathVariable Long spotId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size
+    ) {
+        return ResponseEntity.ok(commentService.findTopLevelBySpot(spotId, page, size));
+    }
+
+
+    // 0-2. 특정 댓글의 답글 페이징 조회
+    @GetMapping("/{parentReplyId}/replies")
+    public ResponseEntity<ReplyPageResponse> getReplies(
+            @PathVariable Long parentReplyId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(commentService.findReplies(parentReplyId, page, size));
+    }
+
     // 1. 댓글 생성 (depth=0)
     @PostMapping
-    public ResponseEntity<ReplyResponse> createComment(
+    public ReplyResponse createComment(
             @PathVariable Long spotId,
             @Valid @RequestBody ReplyRequest req
     ) {
-        return ResponseEntity.ok(commentService.createComment(spotId, req));
+        return commentService.createComment(spotId, req);
     }
 
 
     // 2. 대댓글 생성 (depth=parent.depth+1)
     @PostMapping("/{parentReplyId}/replies")
-    public ResponseEntity<ReplyResponse> createReply(
+    public ReplyResponse createReply(
             @PathVariable Long spotId,
             @PathVariable Long parentReplyId,
             @Valid @RequestBody ReplyRequest req
     ) {
-        return ResponseEntity.ok(commentService.createReply(spotId, parentReplyId, req));
+        return commentService.createReply(spotId, parentReplyId, req);
     }
 
     // 3. 스팟의 모든 최상위 댓글 조회
-    @GetMapping
-    public ResponseEntity<List<ReplyResponse>> getComments(@PathVariable Long spotId) {
-        return ResponseEntity.ok(commentService.findTopLevelBySpot(spotId));
-    }
+//    @GetMapping
+//    public ResponseEntity<List<ReplyResponse>> getComments(@PathVariable Long spotId) {
+//        return ResponseEntity.ok(commentService.findTopLevelBySpot(spotId));
+//    }
 
     // 4. 특정 댓글의 대댓글 조회
-    @GetMapping("/{parentReplyId}/replies")
-    public ResponseEntity<List<ReplyResponse>> getReplies(@PathVariable Long parentReplyId) {
-        {
-            return ResponseEntity.ok(commentService.findReplies(parentReplyId));
-        }
-    }
+//    @GetMapping("/{parentReplyId}/replies")
+//    public ResponseEntity<List<ReplyResponse>> getReplies(@PathVariable Long parentReplyId) {
+//        {
+//            return ResponseEntity.ok(commentService.findReplies(parentReplyId));
+//        }
+//    }
 
     // 5. 댓글/대댓글 수정
     @PutMapping("/{replyId}")
