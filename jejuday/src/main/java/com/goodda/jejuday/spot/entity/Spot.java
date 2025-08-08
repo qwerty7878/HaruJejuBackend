@@ -102,4 +102,8 @@ public class Spot {
     // 작성 주체: true = 유저가 작성, false = 운영자 작성
     @Column(name = "is_user_created")
     private boolean userCreated;
+
+
+    // TODO :  상호명, 카테고리 그룹 코드, 카테고리 그룹 네임, 카테고리 이름, 아이디, 주소지, 위도,경도 속성으로 추가
+    // 위도 경도 아이디 이미 있음.
 }
