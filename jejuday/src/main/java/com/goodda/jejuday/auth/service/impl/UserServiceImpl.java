@@ -252,7 +252,6 @@ public class UserServiceImpl implements UserService {
                 .birthYear(birthYear)
                 .profile(profile != null ? profile : tempUser.getProfile())
                 .userThemes(userThemes)
-                .createdAt(LocalDateTime.now())
                 .isKakaoLogin(false)
                 .build();
 
