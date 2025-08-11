@@ -25,7 +25,6 @@ import com.goodda.jejuday.common.exception.CustomS3Exception;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URL;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -314,6 +313,10 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BadRequestException("유저가 존재하지 않습니다."));
         user.setFcmToken(fcmToken);
+        if (!user.isNotificationEnabled()) {
+            user.setNotificationEnabled(true);
+        }
+        userRepository.save(user);
     }
 
     @Override
@@ -329,6 +332,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new BadRequestException("User not found"));
 
         user.setNotificationEnabled(enabled);
+        userRepository.save(user);
     }
 
     @Override
@@ -338,6 +342,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new BadRequestException("User not found"));
 
         user.setFcmToken(null);
+        userRepository.save(user);
         jwtService.clearAccessTokenCookie(response);
     }
 
@@ -374,6 +379,4 @@ public class UserServiceImpl implements UserService {
     public Optional<User> findByUsername(String username) {
         return userRepository.findByEmail(username);
     }
-
-
 }
