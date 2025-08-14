@@ -1,13 +1,14 @@
 package com.goodda.jejuday.spot.repository;
 
 import com.goodda.jejuday.spot.entity.Spot;
-import java.time.LocalDateTime;
-import org.checkerframework.checker.units.qual.N;
+import com.goodda.jejuday.spot.entity.Spot.SpotType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -38,6 +39,12 @@ public interface SpotRepository extends JpaRepository<Spot, Long> {
     // 3) 좋아요순
     Page<Spot> findByTypeInOrderByLikeCountDesc(
             Iterable<Spot.SpotType> types, Pageable pageable);
+
+    // 트라이 초기화용: SPOT + CHALLENGE
+    List<Spot> findAllByTypeIn(List<SpotType> types);
+
+    // 커뮤니티 검색: 이름 포함 + 타입 필터링
+    Page<Spot> findByNameContainingIgnoreCaseAndTypeIn(String name, List<SpotType> types, Pageable pageable);
 
     // 사용자 정보를 함께 페치하여 N+1 문제 해결
     @Query("SELECT s FROM Spot s JOIN FETCH s.user WHERE s.type IN :types ORDER BY s.createdAt DESC")
