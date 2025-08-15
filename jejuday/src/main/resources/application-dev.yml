@@ -203,3 +203,8 @@ server:
       min-spare: 10
     connection-timeout: 20000
     max-connections: 8192
+
+app:
+  cookie:
+    same-site: Lax        # dev
+    secure: false

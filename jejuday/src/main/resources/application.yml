@@ -31,7 +31,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -112,7 +112,7 @@ kakao:
     id: ${KAKAO_ID}
     secret: ${KAKAO_SECRET}
   redirect:
-    url: ${KAKAO_REDIRECT_URL}
+    url: ${KAKAO_REDIRECT_URL_SERVER}
 
 # Firebase 설정
 firebase:
@@ -128,7 +128,7 @@ notification:
   cache:
     score-ttl: 30m                    # 점수 캐시 TTL
     stats-ttl: 10m                    # 통계 캐시 TTL
-    duplicate-prevention-ttl: 100ms   # 중복 방지 캐시 TTL (5초 → 0.5초로 단축)
+    duplicate-prevention-ttl: 50ms   # 중복 방지 캐시 TTL (5초 → 0.5초로 단축)
 
   # 스팟 승격 설정
   promotion:
@@ -208,3 +208,8 @@ server:
       min-spare: 10
     connection-timeout: 20000
     max-connections: 8192
+
+app:
+  cookie:
+    same-site: Lax        # dev
+    secure: false
