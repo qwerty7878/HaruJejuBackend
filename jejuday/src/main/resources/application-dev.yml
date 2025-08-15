@@ -123,7 +123,7 @@ notification:
   cache:
     score-ttl: 30m                    # 점수 캐시 TTL
     stats-ttl: 10m                    # 통계 캐시 TTL
-    duplicate-prevention-ttl: 100ms   # 중복 방지 캐시 TTL (5초 → 0.5초로 단축)
+    duplicate-prevention-ttl: 50ms   # 중복 방지 캐시 TTL (5초 → 0.5초로 단축)
 
   # 스팟 승격 설정
   promotion:
@@ -203,24 +203,3 @@ server:
       min-spare: 10
     connection-timeout: 20000
     max-connections: 8192
-
-# 개발 환경 설정 (추가)
----
-spring:
-  config:
-    activate:
-      on-profile: dev
-  
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-
-logging:
-  level:
-    com.goodda.jejuday: DEBUG
-    org.springframework.data.redis: DEBUG
-
-notification:
-  cache:
-    duplicate-prevention-ttl: 50ms  # 개발환경에서는 더 짧게
