@@ -118,7 +118,8 @@ public class RegisterController {
                 profileImageUrl,
                 themes,
                 gender,
-                request.getBirthYear()
+                request.getBirthYear(),
+                request.getReferrerNickname()
         );
 
         userService.setLoginCookie(response, request.getEmail());

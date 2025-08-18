@@ -138,7 +138,7 @@ class ControllerUnitTest {
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         verify(userService).completeFinalRegistration(eq("hi@hi.com"), eq("닉네임"), eq("https://profile/pic.jpg"), any(),
-                any(), eq("1950"));
+                any(), eq("1950"), "aaaa");
         verify(userService).setLoginCookie(response, "hi@hi.com");
         verify(kakaoService).authenticateUser(mockUser);
     }
