@@ -5,11 +5,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
 public class KakaoFinalRegisterRequest {
     private String code;
     private String nickname;
@@ -22,6 +24,7 @@ public class KakaoFinalRegisterRequest {
 
     // 추천인 닉네임 (선택사항)
     @Size(max = 20, message = "추천인 닉네임은 20자 이하여야 합니다.")
-    private String referrerNickname;
+    @Builder.Default
+    private String referrerNickname = "제주데이";
 }
 

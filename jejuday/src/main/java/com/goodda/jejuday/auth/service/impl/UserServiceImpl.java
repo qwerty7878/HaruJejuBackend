@@ -209,9 +209,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void saveTemporaryUser(String name, String email, String passwordOrProfile, Platform platform,
+    public void saveTemporaryUser(String email, String passwordOrProfile, Platform platform,
                                   Language language) {
-        temporaryUserService.save(language, platform, name, email, passwordOrProfile);
+        temporaryUserService.save(language, email, passwordOrProfile);
     }
 
     @Override
@@ -256,7 +256,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new IllegalArgumentException("임시 사용자를 찾을 수 없습니다."));
 
         User user = User.builder()
-                .name(tempUser.getName())
+//                .name(tempUser.getName())
                 .email(tempUser.getEmail())
                 .password(tempUser.getPassword())
                 .nickname(nickname)

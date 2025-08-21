@@ -68,7 +68,7 @@ public class RegisterController {
     public ResponseEntity<ApiResponse<String>> registerAppUser(@Valid @RequestBody TempAppRegisterRequest request) {
 
         userService.saveTemporaryUser(
-                request.getName(),
+//                request.getName(),
                 request.getEmail(),
                 request.getPassword(),
                 Platform.APP,

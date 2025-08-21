@@ -13,6 +13,7 @@ import com.goodda.jejuday.auth.entity.Language;
 import com.goodda.jejuday.auth.entity.Platform;
 import com.goodda.jejuday.auth.entity.TemporaryUser;
 import com.goodda.jejuday.auth.repository.TemporaryUserRepository;
+import com.goodda.jejuday.auth.repository.UserRepository;
 import com.goodda.jejuday.common.exception.DuplicateEmailException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,14 +27,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class TemporaryUserServiceImplTest {
 
     private TemporaryUserRepository temporaryUserRepository;
-    private TemporaryUserServiceImpl temporaryUserService;
+    private UserRepository userRepository;  // 추가
     private PasswordEncoder passwordEncoder;
+    private TemporaryUserServiceImpl temporaryUserService;
 
     @BeforeEach
     void setUp() {
         temporaryUserRepository = mock(TemporaryUserRepository.class);
+        userRepository = mock(UserRepository.class);   // 추가
         passwordEncoder = mock(PasswordEncoder.class);
-        temporaryUserService = new TemporaryUserServiceImpl(temporaryUserRepository, passwordEncoder);
+
+        temporaryUserService = new TemporaryUserServiceImpl(
+                temporaryUserRepository,
+                userRepository,          // 새로 추가
+                passwordEncoder
+        );
     }
 
     @Test

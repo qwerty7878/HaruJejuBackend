@@ -72,7 +72,7 @@ class ControllerUnitTest {
     @DisplayName("/app 회원가입")
     void registerAppUser_success() {
         TempAppRegisterRequest req = TempAppRegisterRequest.builder()
-                .name("홍길동").email("a@a.com").password("Abc1234!")
+                .email("a@a.com").password("Abc1234!")
                 .build();
 
         ResponseEntity<ApiResponse<String>> res = registerController.registerAppUser(req);
@@ -81,7 +81,7 @@ class ControllerUnitTest {
         assertThat(res.getBody().getData()).contains("임시 사용자");
 
         verify(userService).saveTemporaryUser(
-                anyString(),
+//                anyString(),
                 anyString(),
                 anyString(),
                 eq(Platform.APP),

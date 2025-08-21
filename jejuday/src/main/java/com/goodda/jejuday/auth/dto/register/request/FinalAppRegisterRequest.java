@@ -37,5 +37,6 @@ public class FinalAppRegisterRequest {
 
     // 추천인 닉네임 (선택사항)
     @Size(max = 20, message = "추천인 닉네임은 20자 이하여야 합니다.")
-    private String referrerNickname;
+    @Builder.Default
+    private String referrerNickname = "제주데이";
 }

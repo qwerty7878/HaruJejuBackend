@@ -5,7 +5,6 @@ import com.goodda.jejuday.auth.repository.UserRepository;
 import com.goodda.jejuday.auth.service.ReferralService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
