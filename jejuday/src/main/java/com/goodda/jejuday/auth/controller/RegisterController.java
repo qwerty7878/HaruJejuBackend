@@ -100,7 +100,6 @@ public class RegisterController {
     public ResponseEntity<ApiResponse<LoginResponse>> completeRegistration(
             @RequestPart("data") @Valid FinalAppRegisterRequest request,
             @RequestPart(value = "profile", required = false) MultipartFile profile,
-            @RequestParam("gender") Gender gender,
             HttpServletResponse response) {
 
         String profileImageUrl = Optional.ofNullable(profile)
@@ -117,7 +116,7 @@ public class RegisterController {
                 request.getNickname(),
                 profileImageUrl,
                 themes,
-                gender,
+                request.getGender(),
                 request.getBirthYear(),
                 request.getReferrerNickname()
         );

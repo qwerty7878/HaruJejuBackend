@@ -1,6 +1,8 @@
 package com.goodda.jejuday.auth.dto.register.request;
 
 import com.goodda.jejuday.auth.entity.Gender;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -16,6 +18,8 @@ public class KakaoFinalRegisterRequest {
     private String code;
     private String nickname;
     private List<String> themes;
+
+    @Enumerated(EnumType.STRING)
     private Gender gender;
 
     @NotBlank(message = "출생연도는 필수입니다.")
