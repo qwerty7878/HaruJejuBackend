@@ -39,8 +39,8 @@ public class SpotDetailResponse extends SpotResponse {
 
         // 태그들
         this.tags = new ArrayList<>(3);
-        if (spot.getTag1() != null) this.tags.add(spot.getTag1().getName());
-        if (spot.getTag2() != null) this.tags.add(spot.getTag2().getName());
-        if (spot.getTag3() != null) this.tags.add(spot.getTag3().getName());
+        if (spot.getTag1() != null && !spot.getTag1().isBlank()) this.tags.add(spot.getTag1());
+        if (spot.getTag2() != null && !spot.getTag2().isBlank()) this.tags.add(spot.getTag2());
+        if (spot.getTag3() != null && !spot.getTag3().isBlank()) this.tags.add(spot.getTag3());
     }
 }

@@ -2,12 +2,13 @@ package com.goodda.jejuday.spot.controller;
 
 import com.goodda.jejuday.auth.dto.ApiResponse;
 import com.goodda.jejuday.auth.entity.User;
-import com.goodda.jejuday.spot.dto.SpotCreateRequest;
+import com.goodda.jejuday.spot.dto.SpotCreateRequestDTO;
 import com.goodda.jejuday.spot.dto.SpotDetailResponse;
 import com.goodda.jejuday.spot.dto.SpotResponse;
 import com.goodda.jejuday.spot.dto.SpotUpdateRequest;
 import com.goodda.jejuday.spot.service.SpotService;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Sort;
@@ -104,7 +105,7 @@ public class SpotController {
      * 테마 enum 으로 설정하고 그 중에서 고를수 있게.
      */
     @PostMapping
-    public ResponseEntity<ApiResponse<Long>> create(@RequestBody SpotCreateRequest req) {
+    public ResponseEntity<ApiResponse<Long>> create(@RequestBody @Valid SpotCreateRequestDTO req) {
         Long id = spotService.createSpot(req);
         return ResponseEntity.ok(ApiResponse.onSuccess(id));
     }
@@ -117,7 +118,7 @@ public class SpotController {
     @PutMapping("/{id}")
     public ResponseEntity<Void> update(
             @PathVariable Long id,
-            @RequestBody SpotUpdateRequest req
+            @RequestBody @Valid SpotUpdateRequest req
     ) {
         spotService.updateSpot(id, req);
         return ResponseEntity.noContent().build();

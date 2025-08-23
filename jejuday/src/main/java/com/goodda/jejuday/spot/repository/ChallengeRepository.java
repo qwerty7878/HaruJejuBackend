@@ -10,41 +10,58 @@ import java.util.List;
 
 public interface ChallengeRepository extends JpaRepository<Spot, Long> {
 
-    // 진행중 목록 (무한스크롤: lastId보다 작은 id만 내려줌)
-    @Query("""
-        select s from Spot s
-        where s.type = com.goodda.jejuday.spot.entity.Spot$SpotType.CHALLENGE
-          and s.isDeleted = false
-          and s.startDate <= :today
-          and (s.endDate is null or s.endDate >= :today)
-          and (:lastId is null or s.id < :lastId)
-        order by s.id desc
-    """)
-    List<Spot> findOngoing(@Param("today") LocalDate today,
-                           @Param("lastId") Long lastId,
-                           Pageable pageable);
-
-    // 완료 목록
-    @Query("""
-        select s from Spot s
-        where s.type = com.goodda.jejuday.spot.entity.Spot$SpotType.CHALLENGE
-          and s.isDeleted = false
-          and s.endDate < :today
-          and (:lastId is null or s.id < :lastId)
-        order by s.id desc
-    """)
-    List<Spot> findCompleted(@Param("today") LocalDate today,
-                             @Param("lastId") Long lastId,
-                             Pageable pageable);
-
-    // 진행전 랜덤 1개 (MySQL/MariaDB 기준)
+    // 테마별 랜덤 N개 (placeholder: 추천 알고리즘 자리)
     @Query(value = """
-        SELECT * FROM spot
-        WHERE type = 'CHALLENGE'
-          AND is_deleted = 0
-          AND start_date > :today
-        ORDER BY RAND()
-        LIMIT 1
+        SELECT * FROM spot s
+        WHERE s.type = 'CHALLENGE' AND s.is_deleted = 0 AND s.theme_id = :themeId
+        ORDER BY RAND() LIMIT :limit
     """, nativeQuery = true)
-    Spot pickRandomUpcoming(@Param("today") LocalDate today);
+    List<Spot> findRandomByTheme(@Param("themeId") Long themeId,
+                                 @Param("limit") int limit);
+
+    // 랜덤 N개 (placeholder: 추천 알고리즘 자리)
+    @Query(value = """
+        SELECT * FROM spot s
+        WHERE s.type = 'CHALLENGE' AND s.is_deleted = 0
+        ORDER BY RAND() LIMIT :limit
+    """, nativeQuery = true)
+    List<Spot> findRandom(@Param("limit") int limit);
+
+//    // 진행중 목록 (무한스크롤: lastId보다 작은 id만 내려줌)
+//    @Query("""
+//        select s from Spot s
+//        where s.type = com.goodda.jejuday.spot.entity.Spot$SpotType.CHALLENGE
+//          and s.isDeleted = false
+//          and s.startDate <= :today
+//          and (s.endDate is null or s.endDate >= :today)
+//          and (:lastId is null or s.id < :lastId)
+//        order by s.id desc
+//    """)
+//    List<Spot> findOngoing(@Param("today") LocalDate today,
+//                           @Param("lastId") Long lastId,
+//                           Pageable pageable);
+//
+//    // 완료 목록
+//    @Query("""
+//        select s from Spot s
+//        where s.type = com.goodda.jejuday.spot.entity.Spot$SpotType.CHALLENGE
+//          and s.isDeleted = false
+//          and s.endDate < :today
+//          and (:lastId is null or s.id < :lastId)
+//        order by s.id desc
+//    """)
+//    List<Spot> findCompleted(@Param("today") LocalDate today,
+//                             @Param("lastId") Long lastId,
+//                             Pageable pageable);
+//
+//    // 진행전 랜덤 1개 (MySQL/MariaDB 기준)
+//    @Query(value = """
+//        SELECT * FROM spot
+//        WHERE type = 'CHALLENGE'
+//          AND is_deleted = 0
+//          AND start_date > :today
+//        ORDER BY RAND()
+//        LIMIT 1
+//    """, nativeQuery = true)
+//    Spot pickRandomUpcoming(@Param("today") LocalDate today);
 }

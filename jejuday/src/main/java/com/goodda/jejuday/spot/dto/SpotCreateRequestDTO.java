@@ -1,16 +1,14 @@
 package com.goodda.jejuday.spot.dto;
 
+import com.goodda.jejuday.spot.entity.Spot;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.Getter;
 
 import java.math.BigDecimal;
 
 @Data
-@Getter
-public class SpotUpdateRequest {
-
+public class SpotCreateRequestDTO {
     @NotBlank
     private String name;
 

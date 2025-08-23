@@ -106,23 +106,15 @@ public class Spot {
     @JoinColumn(name = "theme_id", nullable = true,
             foreignKey = @ForeignKey(name = "fk_spot_theme"))
     private UserTheme theme;
-    // 해시태그 1 nullable = true
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "tag1_id", nullable = true,
-            foreignKey = @ForeignKey(name = "fk_spot_tag1"))
-    private UserTheme tag1;
 
-    // 해시태그 2 nullable = true
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "tag2_id", nullable = true,
-            foreignKey = @ForeignKey(name = "fk_spot_tag2"))
-    private UserTheme tag2;
+    @Column(name = "tag1", length = 50)
+    private String tag1;
 
-    // 해시태그 3 nullable = true
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "tag3_id", nullable = true,
-            foreignKey = @ForeignKey(name = "fk_spot_tag3"))
-    private UserTheme tag3;
+    @Column(name = "tag2", length = 50)
+    private String tag2;
+
+    @Column(name = "tag3", length = 50)
+    private String tag3;
 
 
     // 작성 주체: true = 유저가 작성, false = 운영자 작성 or 네이버 지도 API 호출

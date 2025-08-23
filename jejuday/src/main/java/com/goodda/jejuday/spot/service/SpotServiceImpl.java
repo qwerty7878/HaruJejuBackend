@@ -2,8 +2,9 @@ package com.goodda.jejuday.spot.service;
 
 import com.goodda.jejuday.auth.entity.User;
 import com.goodda.jejuday.auth.repository.UserRepository;
+import com.goodda.jejuday.auth.repository.UserThemeRepository;
 import com.goodda.jejuday.auth.util.SecurityUtil;
-import com.goodda.jejuday.spot.dto.SpotCreateRequest;
+import com.goodda.jejuday.spot.dto.SpotCreateRequestDTO;
 import com.goodda.jejuday.spot.dto.SpotDetailResponse;
 import com.goodda.jejuday.spot.dto.SpotResponse;
 import com.goodda.jejuday.spot.dto.SpotUpdateRequest;
@@ -24,10 +25,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +37,8 @@ public class SpotServiceImpl implements SpotService {
     private final SpotViewLogRepository viewLogRepository;
 //    private final UserRepository userRepository;
     private final SecurityUtil securityUtil;
+    private final UserThemeRepository userThemeRepository;
+
 
     // 지도용: SPOT, CHALLENGE 만
     private static final Iterable<Spot.SpotType> MAP_VISIBLE =
@@ -104,7 +104,7 @@ public class SpotServiceImpl implements SpotService {
 
     @Override
     @Transactional
-    public Long createSpot(SpotCreateRequest req) {
+    public Long createSpot(SpotCreateRequestDTO req) {
         User user = securityUtil.getAuthenticatedUser();
         Spot s = new Spot(
                 req.getName(),
@@ -113,7 +113,51 @@ public class SpotServiceImpl implements SpotService {
                 req.getLongitude(),
                 user
         );
+        s.setUserCreated(true);
+        s.setIsDeleted(false);
+        applyTheme(s, req.getThemeId());
+        applyTags(s, req.getTag1(), req.getTag2(), req.getTag3());
+        
         return spotRepository.save(s).getId();
+    }
+
+    private void applyTheme(Spot s, Long themeId) {
+        if (themeId == null) { s.setTheme(null); return; }
+        s.setTheme(userThemeRepository.findById(themeId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid themeId: " + themeId)));
+    }
+
+    private void applyTags(Spot s, String tag1, String tag2, String tag3) {
+        // 정규화: 앞의 '#' 제거, trim, 빈문자 -> null, 길이 제한
+        s.setTag1(normalizeTag(tag1));
+        s.setTag2(normalizeTag(tag2));
+        s.setTag3(normalizeTag(tag3));
+
+        // (선택) 중복 제거: 같은 태그 중복 시 하나만 남기고 뒤를 null 처리
+        dedupeTags(s);
+    }
+
+    private String normalizeTag(String raw) {
+        if (raw == null) return null;
+        String t = raw.trim();
+        if (t.startsWith("#")) t = t.substring(1).trim();
+        if (t.isEmpty()) return null;
+        if (t.length() > 50) t = t.substring(0, 50);
+        return t;
+    }
+
+    private void dedupeTags(Spot s) {
+        Set<String> seen = new HashSet<>();
+        String t1 = s.getTag1(), t2 = s.getTag2(), t3 = s.getTag3();
+        s.setTag1(keepOrNull(seen, t1));
+        s.setTag2(keepOrNull(seen, t2));
+        s.setTag3(keepOrNull(seen, t3));
+    }
+    private String keepOrNull(Set<String> seen, String v) {
+        if (v == null) return null;
+        String key = v.toLowerCase();
+        if (seen.add(key)) return v;
+        return null;
     }
 
     @Override

@@ -12,7 +12,7 @@ import java.util.List;
 public interface SpotService {
     List<SpotResponse> getNearbySpots(BigDecimal lat, BigDecimal lng, int radiusKm);
     SpotDetailResponse getSpotDetail(Long id);
-    Long createSpot(SpotCreateRequest request);
+    Long createSpot(SpotCreateRequestDTO request);
     void updateSpot(Long id, SpotUpdateRequest request);
     void deleteSpot(Long id);
     void likeSpot(Long id);

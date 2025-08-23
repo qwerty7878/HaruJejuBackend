@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface SpotRepository extends JpaRepository<Spot, Long> {
     @Query(value = """
@@ -97,10 +98,7 @@ public interface SpotRepository extends JpaRepository<Spot, Long> {
    SELECT s FROM Spot s
    LEFT JOIN FETCH s.user
    LEFT JOIN FETCH s.theme
-   LEFT JOIN FETCH s.tag1
-   LEFT JOIN FETCH s.tag2
-   LEFT JOIN FETCH s.tag3
    WHERE s.id = :id
 """)
-    java.util.Optional<Spot> findDetailWithUserAndTagsById(@Param("id") Long id);
+    Optional<Spot> findDetailWithUserAndTagsById(@Param("id") Long id);
 }
