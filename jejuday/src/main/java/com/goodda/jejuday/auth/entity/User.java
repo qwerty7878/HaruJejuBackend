@@ -133,6 +133,9 @@ public class User {
     @Column(name = "total_referrals", nullable = false)
     private int totalReferrals = 0;
 
+    public User(Long sysUserId) {
+    }
+
     public MoodGrade getMoodGrade() {
         return MoodGrade.fromSteps(this.totalSteps);
     }

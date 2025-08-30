@@ -6,9 +6,9 @@ spring:
 #    active: dev
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://jejuday-db.cd0mk8awog5y.ap-northeast-2.rds.amazonaws.com:3306/mydb
-    username: ${RDS_USER}
-    password: ${RDS_PW}
+    url: jdbc:mysql://127.0.0.1:3306/jejuday?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    username: jejuday
+    password: 1120
     hikari:
       maximum-pool-size: 20          # 10 → 20으로 증가
       minimum-idle: 5
@@ -35,7 +35,7 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
         jdbc:
           batch_size: 20
@@ -213,3 +213,11 @@ app:
   cookie:
     same-site: Lax        # dev
     secure: false
+  redis:
+    enabled: false   # true 로 바꾸면 Redis 캐시 사용
+
+tourapi:
+  base-url: https://apis.data.go.kr
+  service-key: ${TOUR_API_KEY}
+  korservice-path: /B551011/KorService2
+  system-user-id: 1

@@ -11,7 +11,9 @@ import org.springframework.data.domain.Pageable;
 
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface SpotRepository extends JpaRepository<Spot, Long> {
     @Query(value = """
@@ -92,4 +94,11 @@ public interface SpotRepository extends JpaRepository<Spot, Long> {
     """)
     List<Spot> findPromotionCandidateSpots(@Param("cutoffDate") LocalDateTime cutoffDate);
 
+    @Query("""
+   SELECT s FROM Spot s
+   LEFT JOIN FETCH s.user
+   LEFT JOIN FETCH s.theme
+   WHERE s.id = :id
+""")
+    Optional<Spot> findDetailWithUserAndTagsById(@Param("id") Long id);
 }
