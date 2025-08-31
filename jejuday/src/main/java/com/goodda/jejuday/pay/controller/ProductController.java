@@ -109,4 +109,20 @@ public class ProductController {
         List<ProductDetailDto> products = productService.getUserUnacceptedProductHistory(userId);
         return ResponseEntity.ok(ApiResponse.onSuccess(products));
     }
+    
+    @Operation(summary = "구매한 굿즈 목록 조회", description = "사용자가 교환한 굿즈 상품 목록을 조회합니다.")
+    @GetMapping("/my/goods")
+    public ResponseEntity<ApiResponse<List<ProductDetailDto>>> getMyGoodsProducts(
+            @Parameter(description = "사용자 ID") @RequestParam Long userId) {
+        List<ProductDetailDto> products = productService.getUserProductHistoryByCategory(userId, ProductCategory.GOODS);
+        return ResponseEntity.ok(ApiResponse.onSuccess(products));
+    }
+
+    @Operation(summary = "구매한 제주티콘 목록 조회", description = "사용자가 교환한 제주티콘 상품 목록을 조회합니다.")
+    @GetMapping("/my/jeju-ticon")
+    public ResponseEntity<ApiResponse<List<ProductDetailDto>>> getMyJejuTiconProducts(
+            @Parameter(description = "사용자 ID") @RequestParam Long userId) {
+        List<ProductDetailDto> products = productService.getUserProductHistoryByCategory(userId, ProductCategory.JEJU_TICON);
+        return ResponseEntity.ok(ApiResponse.onSuccess(products));
+    }
 }

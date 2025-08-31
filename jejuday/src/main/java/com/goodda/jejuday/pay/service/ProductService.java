@@ -156,8 +156,17 @@ public class ProductService {
         exchangeRepository.save(exchange);
     }
 
+
     public List<ProductDetailDto> getUserUnacceptedProductHistory(Long userId) {
         return exchangeRepository.findByUserIdAndAcceptedFalseOrderByExchangedAtDesc(userId).stream()
+                .map(ProductDetailDto::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductDetailDto> getUserProductHistoryByCategory(Long userId, ProductCategory category) {
+        return exchangeRepository.findByUserIdOrderByExchangedAtDesc(userId).stream()
+                .filter(exchange -> exchange.getProduct().getCategory() == category)
                 .map(ProductDetailDto::from)
                 .toList();
     }
