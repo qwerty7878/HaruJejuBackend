@@ -22,6 +22,15 @@ public interface ChallengeParticipationRepository extends JpaRepository<Challeng
                                              @Param("statuses") List<Status> statuses,
                                              Pageable pageable);
 
+    // 전체 진행중인 챌린지 조회 (페이징 없음) - 추천 생성용
+    @Query("""
+       select cp from ChallengeParticipation cp
+       join fetch cp.challenge s
+       where cp.user.id = :userId and cp.status in :statuses
+    """)
+    List<ChallengeParticipation> findOngoingAll(@Param("userId") Long userId,
+                                                @Param("statuses") List<Status> statuses);
+
     @Query("""
        select distinct s.theme.id from ChallengeParticipation cp
        join cp.challenge s
