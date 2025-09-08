@@ -105,14 +105,15 @@ public interface SpotRepository extends JpaRepository<Spot, Long> {
 
     // 최근 N개 id만 가볍게 뽑기(테마 선택 가능) → 메모리에서 랜덤
     @Query("""
-       select s.id
-       from Spot s
-       where s.type = 'CHALLENGE'
-         and (s.isDeleted = false or s.isDeleted is null)
-         and (:themeId is null or s.theme.id = :themeId)
-       order by s.id desc
-    """)
-    List<Long> findRecentChallengeIds(@Param("themeId") Long themeId, Pageable pageable);
+   select s.id
+   from Spot s
+   where s.type = 'CHALLENGE'
+     and (s.isDeleted = false or s.isDeleted is null)
+     and (:themeId is null or s.theme.id = :themeId)
+   order by s.id desc
+""")
+    List<Long> findRecentChallengeIds(@Param("themeId") Long themeId,
+                                      org.springframework.data.domain.Pageable pageable);
 
 
     // 아무거나 1개 (중복 허용 백업용)

@@ -1,17 +1,25 @@
 package com.goodda.jejuday.spot.service;
 
-import com.goodda.jejuday.auth.entity.User;
-import com.goodda.jejuday.auth.entity.UserTheme;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.goodda.jejuday.auth.util.SecurityUtil;
 import com.goodda.jejuday.spot.dto.ChallengeResponse;
 import com.goodda.jejuday.spot.entity.ChallengeParticipation;
 import com.goodda.jejuday.spot.entity.ChallengeRecoItem;
+import com.goodda.jejuday.spot.entity.ChallengeRecoSnapshot;
 import com.goodda.jejuday.spot.entity.Spot;
-import com.goodda.jejuday.spot.repository.*;
+import com.goodda.jejuday.spot.repository.ChallengeParticipationRepository;
+import com.goodda.jejuday.spot.repository.ChallengeRecoItemRepository;
+import com.goodda.jejuday.spot.repository.ChallengeRecoSnapshotRepository;
+import com.goodda.jejuday.spot.repository.SpotRepository;
+import com.goodda.jejuday.auth.repository.UserThemeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.framework.AopContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -26,209 +34,342 @@ import java.util.stream.Collectors;
 public class ChallengeRecoFacade {
 
 	private static final int SLOT_COUNT = 4;
-	private static final int TTL_HOURS = 1; // 1시간으로 단축해서 테스트
+	private static final int TTL_DAYS = 2;
+	private static final int CANDIDATE_WINDOW = 200; // 최근 N개에서 후보 뽑기
+	private static final int MAX_RETRY = 5;          // 테마 제외 랜덤 재시도
 
 	private final SecurityUtil securityUtil;
-	private final ChallengeRepository challengeRepository;
+
 	private final ChallengeRecoItemRepository itemRepo;
+	private final ChallengeRecoSnapshotRepository snapshotRepo;
 	private final ChallengeParticipationRepository participationRepo;
 	private final SpotRepository spotRepository;
+	private final UserThemeRepository userThemeRepo;
 
-	/** 진행전 4개: 매번 새로운 결과 생성 */
-	@Transactional
+	private final ObjectMapper objectMapper;
+
+	@Lazy
+	private final ChallengeRecoFacade unusedForCtorOnly = null;
+
+	private ChallengeRecoFacade self() {
+		return (ChallengeRecoFacade) AopContext.currentProxy();
+	}
+
+	/** 진행전 4개: 부족/만료 시 자동 보충 + 새 트랜잭션 재조회 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<ChallengeResponse> getUpcomingWithAutoRefresh() {
 		Long userId = securityUtil.getAuthenticatedUser().getId();
 		LocalDateTime now = LocalDateTime.now();
 
-		log.info("Getting upcoming challenges for user: {}", userId);
-
-		// 현재 유효한 아이템들 조회
-		List<ChallengeRecoItem> activeItems = itemRepo.findActiveByUser(userId, now);
-		log.info("Found {} active items for user {}", activeItems.size(), userId);
-
-		// 만료되었거나 부족하면 새로 생성
-		if (activeItems.size() < SLOT_COUNT || isExpiredSoon(activeItems)) {
-			log.info("Refreshing recommendations for user {}", userId);
-			purgeAndRefresh(userId);
-			activeItems = itemRepo.findActiveByUser(userId, now);
+		List<Long> ids = loadActiveSpotIds(userId, now);
+		if (ids.size() < SLOT_COUNT) {
+			log.info("Auto refresh needed for user {} ({} / {}).", userId, ids.size(), SLOT_COUNT);
+			self().refreshSlotsIfNeeded(userId); // REQUIRES_NEW
 		}
-
-		// Spot 조회 및 Response 변환
-		return convertToResponses(activeItems);
+		return self().requeryAndUpdateSnapshotNewTx(userId);
 	}
 
 	/** 강제 새로고침 */
-	@Transactional
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public List<ChallengeResponse> forceRefreshAndGet() {
 		Long userId = securityUtil.getAuthenticatedUser().getId();
 		log.info("Force refreshing recommendations for user {}", userId);
 
-		purgeAndRefresh(userId);
-
-		List<ChallengeRecoItem> activeItems = itemRepo.findActiveByUser(userId, LocalDateTime.now());
-		return convertToResponses(activeItems);
+		self().purgeUserItems(userId);
+		self().refreshSlotsIfNeeded(userId);
+		return self().requeryAndUpdateSnapshotNewTx(userId);
 	}
 
-	private boolean isExpiredSoon(List<ChallengeRecoItem> items) {
-		LocalDateTime soon = LocalDateTime.now().plus(30, ChronoUnit.MINUTES);
-		return items.stream().anyMatch(item -> item.getExpiresAt().isBefore(soon));
-	}
-
-	private void purgeAndRefresh(Long userId) {
-		// 기존 아이템 모두 삭제
+	/** 기존 추천 삭제 + 스냅샷 더티 */
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void purgeUserItems(Long userId) {
 		itemRepo.deleteByUserId(userId);
-
-		// 새로운 추천 생성
-		generateNewRecommendations(userId);
+		markSnapshotDirty(userId);
 	}
 
-	private void generateNewRecommendations(Long userId) {
+	/**
+	 * 4개 보장 보충 로직
+	 * - 슬롯 0..2: 선호 테마 → 랜덤(테마제외) → 아무거나
+	 * - 슬롯 3: 랜덤(테마제외) → 유니크 백업 → 최종 중복허용
+	 */
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void refreshSlotsIfNeeded(Long userId) {
 		LocalDateTime now = LocalDateTime.now();
-		LocalDateTime expiresAt = now.plus(TTL_HOURS, ChronoUnit.HOURS);
+		LocalDateTime expiresAt = now.plus(TTL_DAYS, ChronoUnit.DAYS);
 
-		// 사용된 Spot ID 추적
-		Set<Long> usedSpotIds = new HashSet<>();
+		// 현재 유효 아이템
+		List<ChallengeRecoItem> active = itemRepo.findActiveByUser(userId, now);
+		Map<Integer, ChallengeRecoItem> bySlot = active.stream()
+				.collect(Collectors.toMap(ChallengeRecoItem::getSlotIndex, it -> it, (a, b) -> a));
 
-		// 선호 테마 조회 (진행중인 테마 제외)
-		List<Long> preferredThemes = getPreferredThemes(userId);
-		log.info("User {} preferred themes: {}", userId, preferredThemes);
+		// 선호 테마 (LazyInit 회피: 리포지토리에서 ID만)
+		List<Long> prefThemeIds = resolvePrefThemes(userId, 3);
+		log.info("User {} preferred themes: {}", userId, prefThemeIds);
 
-		// 4개 슬롯 채우기
-		for (int slot = 0; slot < SLOT_COUNT; slot++) {
-			Spot selectedSpot = selectSpotForSlot(slot, preferredThemes, usedSpotIds);
+		// 사용된 spot (이번 리프레시 내 중복 방지)
+		Set<Long> usedSpotIds = active.stream()
+				.map(ChallengeRecoItem::getSpotId)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 
-			if (selectedSpot != null) {
-				saveRecommendationItem(userId, slot, selectedSpot, now, expiresAt);
-				usedSpotIds.add(selectedSpot.getId());
-				log.info("Added spot {} to slot {} for user {}", selectedSpot.getId(), slot, userId);
+		// 직전 스냅샷도 배제 → 동일 4개 반복 감소
+		ChallengeRecoSnapshot snap = snapshotRepo.findById(userId).orElse(null);
+		if (snap != null && snap.getSpotIdsJson() != null) {
+			usedSpotIds.addAll(safeReadIds(snap.getSpotIdsJson()));
+		}
+
+		// 슬롯 0..2: 선호테마 우선
+		for (int slot = 0; slot < 3; slot++) {
+			if (bySlot.containsKey(slot)) continue;
+
+			Long preferTheme = (slot < prefThemeIds.size()) ? prefThemeIds.get(slot) : null;
+			Spot pick = pickForSlot(preferTheme, prefThemeIds, usedSpotIds);
+
+			if (pick != null) {
+				addItem(userId, slot, pick, reasonFor(preferTheme), now, expiresAt);
+				usedSpotIds.add(pick.getId());
+				bySlot.put(slot, dummyItem(slot));
+				log.info("Added spot {} to slot {} for user {}", pick.getId(), slot, userId);
 			} else {
 				log.warn("Failed to find spot for slot {} user {}", slot, userId);
 			}
 		}
+
+		// 슬롯 3: 랜덤(테마제외) → 유니크 백업 → 최종 중복허용
+		fillAnyRemainingSlots(userId, bySlot, prefThemeIds, usedSpotIds, now, expiresAt);
 	}
 
-	private List<Long> getPreferredThemes(Long userId) {
-		User user = securityUtil.getAuthenticatedUser();
+	// ==================== 재조회/스냅샷/변환 ====================
 
-		// 진행중인 테마 조회
-		List<ChallengeParticipation.Status> ongoingStatuses = Arrays.asList(
+	/** 새 트랜잭션 재조회 + 스냅샷 갱신 + DTO 변환(트랜잭션 내라 Lazy 안전) */
+	@Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+	public List<ChallengeResponse> requeryAndUpdateSnapshotNewTx(Long userId) {
+		LocalDateTime now = LocalDateTime.now();
+		List<Long> ids = loadActiveSpotIds(userId, now);
+		saveSnapshot(userId, ids, now, now.plusDays(TTL_DAYS));
+
+		List<ChallengeResponse> out = toResponsesPreservingOrder(ids);
+		log.info("Converted {} items to {} responses", ids.size(), out.size());
+		return out;
+	}
+
+	private void addItem(Long userId,
+						 int slot,
+						 Spot pick,
+						 String reason,
+						 LocalDateTime now,
+						 LocalDateTime expiresAt) {
+		ChallengeRecoItem item = new ChallengeRecoItem();
+		item.setUserId(userId);
+		item.setSpotId(pick.getId());
+		item.setThemeId(pick.getTheme() != null ? pick.getTheme().getId() : null);
+		item.setSlotIndex(slot);
+		item.setGeneratedAt(now);
+		item.setExpiresAt(expiresAt);
+		item.setReason(reason);
+		itemRepo.save(item);
+	}
+
+	private List<Long> loadActiveSpotIds(Long userId, LocalDateTime now) {
+		return itemRepo.findActiveByUser(userId, now).stream()
+				.sorted(Comparator.comparingInt(ChallengeRecoItem::getSlotIndex))
+				.map(ChallengeRecoItem::getSpotId)
+				.filter(Objects::nonNull)
+				.toList();
+	}
+
+	private void saveSnapshot(Long userId, List<Long> spotIds, LocalDateTime now, LocalDateTime expiresAt) {
+		try {
+			ChallengeRecoSnapshot snap = snapshotRepo.findById(userId).orElse(null);
+			String json = objectMapper.writeValueAsString(spotIds != null ? spotIds : List.of());
+			if (snap == null) {
+				snap = new ChallengeRecoSnapshot();
+				snap.setUserId(userId);
+			}
+			snap.setGeneratedAt(now);
+			snap.setExpiresAt(expiresAt);
+			snap.setDirty(false);
+			snap.setSpotIdsJson(json);
+			snapshotRepo.save(snap);
+		} catch (Exception e) {
+			log.warn("Snapshot save failed for user {}: {}", userId, e.toString());
+		}
+	}
+
+	private void markSnapshotDirty(Long userId) {
+		ChallengeRecoSnapshot snap = snapshotRepo.findById(userId).orElse(null);
+		if (snap != null) {
+			snap.setDirty(true);
+			snapshotRepo.save(snap);
+		}
+	}
+
+	/** Spot IDs → 순서 유지하여 DTO 변환 (트랜잭션 내) */
+	@Transactional(readOnly = true)
+	protected List<ChallengeResponse> toResponsesPreservingOrder(List<Long> spotIdsInOrder) {
+		if (spotIdsInOrder == null || spotIdsInOrder.isEmpty()) return List.of();
+
+		List<Spot> spots = spotRepository.findAllById(spotIdsInOrder);
+		Map<Long, Spot> byId = spots.stream()
+				.filter(s -> s != null && s.getType() == Spot.SpotType.CHALLENGE && !Boolean.TRUE.equals(s.getIsDeleted()))
+				.collect(Collectors.toMap(Spot::getId, s -> s, (a, b) -> a));
+
+		List<ChallengeResponse> out = new ArrayList<>(spotIdsInOrder.size());
+		for (Long id : spotIdsInOrder) {
+			Spot s = byId.get(id);
+			if (s != null) out.add(ChallengeResponse.of(s));
+		}
+		return out;
+	}
+
+	// ==================== Picking Methods ====================
+
+	private String reasonFor(Long preferTheme) {
+		return (preferTheme != null) ? "PREF_THEME" : "BACKFILL_RANDOM";
+	}
+
+	private Spot pickForSlot(Long preferTheme, List<Long> prefThemeIds, Set<Long> usedSpotIds) {
+		Spot pick = null;
+		if (preferTheme != null) {
+			pick = pickOneByTheme(preferTheme, usedSpotIds);
+		}
+		if (pick == null) {
+			pick = pickOneRandomExcludingThemes(prefThemeIds, usedSpotIds);
+		}
+		if (pick == null) {
+			pick = pickOneRandom(usedSpotIds);
+		}
+		return pick;
+	}
+
+	/** 최근 N개 아이디 중 exclude 아닌 것 랜덤 1개 (메모리 랜덤) */
+	@Transactional(readOnly = true)
+	protected Spot pickFromRecent(Long themeId, Set<Long> exclude) {
+		List<Long> ids = spotRepository.findRecentChallengeIds(themeId, PageRequest.of(0, CANDIDATE_WINDOW));
+		if (ids.isEmpty()) return null;
+
+		// exclude 제거
+		List<Long> pool = ids.stream().filter(id -> !exclude.contains(id)).toList();
+		if (pool.isEmpty()) return null;
+
+		Long pickId = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+		return spotRepository.findById(pickId).orElse(null);
+	}
+
+	@Transactional(readOnly = true)
+	protected Spot pickOneByTheme(Long themeId, Set<Long> excludeSpotIds) {
+		if (themeId == null) return null;
+		return pickFromRecent(themeId, excludeSpotIds);
+	}
+
+	/** 테마 제외 랜덤: 충돌 시 여러번 재시도 (MAX_RETRY) */
+	@Transactional(readOnly = true)
+	protected Spot pickOneRandomExcludingThemes(List<Long> excludedThemeIds, Set<Long> exclude) {
+		for (int i = 0; i < MAX_RETRY; i++) {
+			Spot s = pickFromRecent(null, exclude);
+			if (s == null) return null;
+			Long t = (s.getTheme() != null) ? s.getTheme().getId() : null;
+			boolean ok = (t == null) || excludedThemeIds == null || !excludedThemeIds.contains(t);
+			if (ok) return s;
+			exclude.add(s.getId()); // 다음 시도에서 제외
+		}
+		return null;
+	}
+
+	@Transactional(readOnly = true)
+	protected Spot pickOneRandom(Set<Long> excludeSpotIds) {
+		return pickFromRecent(null, excludeSpotIds);
+	}
+
+	/** 최근 목록에서 '아직 안 쓴 것'을 순차로 하나 (유니크 보장) */
+	@Transactional(readOnly = true)
+	protected Spot pickNextUniqueFromRecent(Set<Long> used) {
+		List<Long> ids = spotRepository.findRecentChallengeIds(null, PageRequest.of(0, CANDIDATE_WINDOW));
+		for (Long id : ids) {
+			if (!used.contains(id)) {
+				return spotRepository.findById(id).orElse(null);
+			}
+		}
+		return null;
+	}
+
+	/** 최종 중복 허용 백업: 최근 목록에서 첫 번째 아무거나 */
+	@Transactional(readOnly = true)
+	protected Spot pickAnyIgnoringExcludes() {
+		List<Long> ids = spotRepository.findRecentChallengeIds(null, PageRequest.of(0, Math.max(10, SLOT_COUNT)));
+		if (ids.isEmpty()) return null;
+		return spotRepository.findById(ids.get(0)).orElse(null);
+	}
+
+	/** 남은 슬롯 백필: 재시도 → 유니크 백업 → 최종 중복허용 */
+	private void fillAnyRemainingSlots(Long userId, Map<Integer, ChallengeRecoItem> bySlot,
+									   List<Long> prefThemeIds, Set<Long> usedSpotIds,
+									   LocalDateTime now, LocalDateTime expiresAt) {
+		for (int slot = 0; slot < SLOT_COUNT; slot++) {
+			if (bySlot.containsKey(slot)) continue;
+
+			// 1) 테마 제외 랜덤 (여러 번 재시도)
+			Spot pick = pickRandomExclThenAny(prefThemeIds, usedSpotIds);
+
+			// 2) 그래도 실패면 유니크 보장
+			if (pick == null) {
+				pick = pickNextUniqueFromRecent(usedSpotIds);
+			}
+
+			// 3) 그래도 실패면 최종 중복 허용
+			if (pick == null) {
+				pick = pickAnyIgnoringExcludes();
+			}
+
+			if (pick != null) {
+				addItem(userId, slot, pick, "BACKFILL", now, expiresAt);
+				usedSpotIds.add(pick.getId());
+				bySlot.put(slot, dummyItem(slot));
+				log.info("Backfilled slot {} with spot {} for user {}", slot, pick.getId(), userId);
+			} else {
+				log.error("Backfill failed for slot {} user {} (no candidates at all)", slot, userId);
+			}
+		}
+	}
+
+	private Spot pickRandomExclThenAny(List<Long> prefThemeIds, Set<Long> usedSpotIds) {
+		Spot pick = pickOneRandomExcludingThemes(prefThemeIds, usedSpotIds);
+		return (pick != null) ? pick : pickOneRandom(usedSpotIds);
+	}
+
+	// ==================== Pref Themes / Util ====================
+
+	/** 선호 테마 ID 안전 조회 (Lazy 컬렉션 접근 금지) */
+	private List<Long> resolvePrefThemes(Long userId, int limit) {
+		List<ChallengeParticipation.Status> ongoing = Arrays.asList(
 				ChallengeParticipation.Status.JOINED,
 				ChallengeParticipation.Status.SUBMITTED,
 				ChallengeParticipation.Status.APPROVED
 		);
+		List<Long> ongoingThemeIds = participationRepo.findOngoingThemeIds(userId, ongoing);
 
-		List<Long> ongoingThemeIds = participationRepo.findOngoingThemeIds(userId, ongoingStatuses);
+		// UserTheme → themeId 리스트 (모델에 따라 findThemeIdsByUserId가 theme.id를 반환해야 함)
+		List<Long> themeIds = userThemeRepo.findThemeIdsByUserId(userId);
 
-		// 선호 테마에서 진행중인 테마 제외
-		return user.getUserThemes().stream()
+		return themeIds.stream()
 				.filter(Objects::nonNull)
-				.map(UserTheme::getId)
-				.filter(Objects::nonNull)
-				.filter(themeId -> !ongoingThemeIds.contains(themeId))
-				.limit(3)
-				.collect(Collectors.toList());
+				.filter(id -> ongoingThemeIds == null || !ongoingThemeIds.contains(id))
+				.distinct()
+				.limit(limit)
+				.toList();
 	}
 
-	private Spot selectSpotForSlot(int slot, List<Long> preferredThemes, Set<Long> usedSpotIds) {
-		// 슬롯 0-2: 선호 테마 우선
-		if (slot < 3 && slot < preferredThemes.size()) {
-			Long themeId = preferredThemes.get(slot);
-			Spot spot = findRandomSpotByTheme(themeId, usedSpotIds);
-			if (spot != null) return spot;
-		}
-
-		// 선호 테마에서 못찾거나 슬롯3이면 전체에서 랜덤
-		return findRandomSpotExcludingThemes(preferredThemes, usedSpotIds);
+	private ChallengeRecoItem dummyItem(int slot) {
+		ChallengeRecoItem d = new ChallengeRecoItem();
+		d.setSlotIndex(slot);
+		return d;
 	}
 
-	private Spot findRandomSpotByTheme(Long themeId, Set<Long> excludeIds) {
-		// 해당 테마의 챌린지들 조회
-		List<Spot> candidates = challengeRepository.findByThemeAndType(themeId, Spot.SpotType.CHALLENGE, PageRequest.of(0, 50));
-
-		// 필터링: 삭제되지 않고 제외 목록에 없는 것
-		List<Spot> filtered = candidates.stream()
-				.filter(s -> !Boolean.TRUE.equals(s.getIsDeleted()))
-				.filter(s -> !excludeIds.contains(s.getId()))
-				.collect(Collectors.toList());
-
-		if (filtered.isEmpty()) return null;
-
-		// 랜덤 선택
-		return filtered.get(ThreadLocalRandom.current().nextInt(filtered.size()));
-	}
-
-	private Spot findRandomSpotExcludingThemes(List<Long> excludeThemes, Set<Long> excludeIds) {
-		// 전체 챌린지에서 조회
-		List<Spot> candidates = challengeRepository.findByType(Spot.SpotType.CHALLENGE, PageRequest.of(0, 100));
-
-		// 필터링
-		List<Spot> filtered = candidates.stream()
-				.filter(s -> !Boolean.TRUE.equals(s.getIsDeleted()))
-				.filter(s -> !excludeIds.contains(s.getId()))
-				.filter(s -> {
-					Long themeId = s.getTheme() != null ? s.getTheme().getId() : null;
-					return themeId == null || !excludeThemes.contains(themeId);
-				})
-				.collect(Collectors.toList());
-
-		if (filtered.isEmpty()) {
-			// 제외 조건 무시하고 아무거나
-			return candidates.stream()
-					.filter(s -> !Boolean.TRUE.equals(s.getIsDeleted()))
-					.filter(s -> !excludeIds.contains(s.getId()))
-					.findFirst()
-					.orElse(null);
-		}
-
-		return filtered.get(ThreadLocalRandom.current().nextInt(filtered.size()));
-	}
-
-	private void saveRecommendationItem(Long userId, int slot, Spot spot, LocalDateTime now, LocalDateTime expiresAt) {
-		ChallengeRecoItem item = new ChallengeRecoItem();
-		item.setUserId(userId);
-		item.setSpotId(spot.getId());
-		item.setThemeId(spot.getTheme() != null ? spot.getTheme().getId() : null);
-		item.setSlotIndex(slot);
-		item.setGeneratedAt(now);
-		item.setExpiresAt(expiresAt);
-		item.setReason("GENERATED");
-		itemRepo.save(item);
-	}
-
-	private List<ChallengeResponse> convertToResponses(List<ChallengeRecoItem> items) {
-		if (items == null || items.isEmpty()) {
+	private List<Long> safeReadIds(String json) {
+		try {
+			return objectMapper.readValue(json, new TypeReference<List<Long>>() {});
+		} catch (Exception e) {
 			return List.of();
 		}
-
-		// 슬롯 순서로 정렬
-		items.sort(Comparator.comparingInt(ChallengeRecoItem::getSlotIndex));
-
-		// Spot ID 수집
-		List<Long> spotIds = items.stream()
-				.map(ChallengeRecoItem::getSpotId)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList());
-
-		if (spotIds.isEmpty()) {
-			return List.of();
-		}
-
-		// Spot들을 JOIN FETCH로 조회
-		List<Spot> spots = challengeRepository.findByIdInWithTheme(spotIds);
-		Map<Long, Spot> spotMap = spots.stream()
-				.filter(s -> s.getType() == Spot.SpotType.CHALLENGE && !Boolean.TRUE.equals(s.getIsDeleted()))
-				.collect(Collectors.toMap(Spot::getId, s -> s));
-
-		// 순서 유지하며 Response 생성
-		List<ChallengeResponse> responses = new ArrayList<>();
-		for (ChallengeRecoItem item : items) {
-			Spot spot = spotMap.get(item.getSpotId());
-			if (spot != null) {
-				responses.add(ChallengeResponse.of(spot));
-			}
-		}
-
-		log.info("Converted {} items to {} responses", items.size(), responses.size());
-		return responses;
 	}
 }
