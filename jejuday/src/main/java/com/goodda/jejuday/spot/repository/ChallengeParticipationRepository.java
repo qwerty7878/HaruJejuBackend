@@ -40,40 +40,40 @@ public interface ChallengeParticipationRepository extends JpaRepository<Challeng
                                    @Param("statuses") List<Status> statuses);
 
     @Query("""
-       select cp from ChallengeParticipation cp
-       join fetch cp.challenge s
-       left join fetch s.theme
-       where cp.user.id = :userId
-         and cp.status = com.goodda.jejuday.spot.entity.ChallengeParticipation$Status.COMPLETED
-         and (:lastId is null or cp.id < :lastId)
-       order by cp.completedAt desc, cp.id desc
-    """)
+   select cp from ChallengeParticipation cp
+   join fetch cp.challenge s
+   left join fetch s.theme
+   where cp.user.id = :userId
+     and cp.status = com.goodda.jejuday.spot.entity.ChallengeParticipation.Status.COMPLETED
+     and (:lastId is null or cp.id < :lastId)
+   order by cp.completedAt desc, cp.id desc
+""")
     List<ChallengeParticipation> findCompletedLatest(@Param("userId") Long userId,
                                                      @Param("lastId") Long lastId,
                                                      Pageable pageable);
 
     @Query("""
-       select cp from ChallengeParticipation cp
-       join fetch cp.challenge s
-       left join fetch s.theme
-       where cp.user.id = :userId
-         and cp.status = com.goodda.jejuday.spot.entity.ChallengeParticipation$Status.COMPLETED
-         and (:lastId is null or cp.id < :lastId)
-       order by s.viewCount desc, cp.id desc
-    """)
+   select cp from ChallengeParticipation cp
+   join fetch cp.challenge s
+   left join fetch s.theme
+   where cp.user.id = :userId
+     and cp.status = com.goodda.jejuday.spot.entity.ChallengeParticipation.Status.COMPLETED
+     and (:lastId is null or cp.id < :lastId)
+   order by s.viewCount desc, cp.id desc
+""")
     List<ChallengeParticipation> findCompletedByViews(@Param("userId") Long userId,
                                                       @Param("lastId") Long lastId,
                                                       Pageable pageable);
 
     @Query("""
-       select cp from ChallengeParticipation cp
-       join fetch cp.challenge s
-       left join fetch s.theme
-       where cp.user.id = :userId
-         and cp.status = com.goodda.jejuday.spot.entity.ChallengeParticipation$Status.COMPLETED
-         and (:lastId is null or cp.id < :lastId)
-       order by s.likeCount desc, cp.id desc
-    """)
+   select cp from ChallengeParticipation cp
+   join fetch cp.challenge s
+   left join fetch s.theme
+   where cp.user.id = :userId
+     and cp.status = com.goodda.jejuday.spot.entity.ChallengeParticipation.Status.COMPLETED
+     and (:lastId is null or cp.id < :lastId)
+   order by s.likeCount desc, cp.id desc
+""")
     List<ChallengeParticipation> findCompletedByLikes(@Param("userId") Long userId,
                                                       @Param("lastId") Long lastId,
                                                       Pageable pageable);
