@@ -3,6 +3,7 @@ package com.goodda.jejuday.spot.repository;
 import com.goodda.jejuday.spot.entity.Spot;
 import com.goodda.jejuday.spot.entity.Spot.SpotType;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,7 +19,7 @@ import java.util.Optional;
 
 public interface SpotRepository extends JpaRepository<Spot, Long> {
     @Query(value = """
-    SELECT * FROM spot s
+    SELECT * FROM Spot s
     WHERE s.is_deleted = false AND (
         6371 * acos(
             cos(radians(:lat)) *
@@ -32,6 +33,8 @@ public interface SpotRepository extends JpaRepository<Spot, Long> {
     List<Spot> findWithinRadius(@Param("lat") BigDecimal lat, @Param("lng") BigDecimal lng, @Param("radius") int radius);
 
     // 1) 최신순
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT s FROM Spot s WHERE s.type IN :types AND s.isDeleted = false ORDER BY s.createdAt DESC")
     Page<Spot> findByTypeInOrderByCreatedAtDesc(
             Iterable<Spot.SpotType> types, Pageable pageable);
 
@@ -40,6 +43,8 @@ public interface SpotRepository extends JpaRepository<Spot, Long> {
             Iterable<Spot.SpotType> types, Pageable pageable);
 
     // 3) 좋아요순
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT s FROM Spot s WHERE s.type IN :types AND s.isDeleted = false ORDER BY s.createdAt DESC")
     Page<Spot> findByTypeInOrderByLikeCountDesc(
             Iterable<Spot.SpotType> types, Pageable pageable);
 

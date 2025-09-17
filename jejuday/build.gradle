@@ -41,8 +41,6 @@ dependencies {
     //mysql
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-    implementation 'org.postgresql:postgresql:42.7.3'
-
     // firebase
     implementation 'com.google.firebase:firebase-admin:9.1.1'
 
@@ -88,6 +86,8 @@ dependencies {
     // Redis 최적화
     implementation 'org.apache.commons:commons-pool2'
     implementation 'io.lettuce:lettuce-core'
+
+    implementation 'ch.qos.logback:logback-classic:1.5.18'
 
     // 스케줄링
     implementation 'org.springframework.boot:spring-boot-starter-quartz'

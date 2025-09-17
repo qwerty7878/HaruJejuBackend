@@ -37,13 +37,18 @@ public class SpotDetailResponse extends SpotResponse {
         super(
                 spot.getId(),
                 spot.getName(),
+                spot.getDescription(),          // 추가: 글 내용
                 spot.getLatitude(),
                 spot.getLongitude(),
                 likeCount,
                 likedByMe,
                 buildImageUrls(spot),
+                spot.getUser().getId(),         // 추가: 작성자 ID
+                spot.getUser().getNickname(),   // 추가: 작성자 닉네임
+                spot.getUser().getProfile(),    // 추가: 작성자 프로필
                 spot.getType(),
-                isChallengeOngoing(spot)
+                isChallengeOngoing(spot),
+                spot.getCreatedAt()             // 추가: 작성 시간
         );
         this.description = spot.getDescription();
         this.commentCount = 0;              // 추후 구현

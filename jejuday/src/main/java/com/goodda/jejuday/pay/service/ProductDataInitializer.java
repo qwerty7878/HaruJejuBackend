@@ -2,6 +2,7 @@ package com.goodda.jejuday.pay.service;
 
 import com.goodda.jejuday.pay.entity.Product;
 import com.goodda.jejuday.pay.entity.ProductCategory;
+import com.goodda.jejuday.pay.repository.ProductExchangeRepository;
 import com.goodda.jejuday.pay.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -14,10 +15,13 @@ import java.util.List;
 public class ProductDataInitializer implements CommandLineRunner {
 
     private final ProductRepository productRepository;
+    private final ProductExchangeRepository productExchangeRepository;
 
     @Override
     public void run(String... args) {
+//        productExchangeRepository.deleteAllInBatch();
 //        productRepository.deleteAllInBatch();
+
         if (productRepository.count() > 0) return; // 이미 데이터가 있다면 실행하지 않음
 
         List<Product> products = List.of(
@@ -30,9 +34,9 @@ public class ProductDataInitializer implements CommandLineRunner {
                 Product.builder().name("핸드메이드 토끼 뜨개 스트링 파우치").category(ProductCategory.GOODS).hallabongCost(15000).stock(40).imageUrl("https://jejudaybucket123.s3.ap-northeast-2.amazonaws.com/item-images/KakaoTalk_Image_2025-09-07-21-54-28_001.jpeg").build(),
 
                 // 제주티콘
-                Product.builder().name("흑돼지 돼랑이").category(ProductCategory.JEJU_TICON).hallabongCost(2000).stock(1).imageUrl("https://jejudaybucket123.s3.ap-northeast-2.amazonaws.com/item-images/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA+2025-09-07+%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE+9.46.13.png").build(),
-                Product.builder().name("해녀 흑돼지").category(ProductCategory.JEJU_TICON).hallabongCost(2000).stock(1).imageUrl("https://jejudaybucket123.s3.ap-northeast-2.amazonaws.com/item-images/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA+2025-09-07+%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE+9.46.23.png").build(),
-                Product.builder().name("감귤이").category(ProductCategory.JEJU_TICON).hallabongCost(2000).stock(1).imageUrl("https://jejudaybucket123.s3.ap-northeast-2.amazonaws.com/item-images/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA+2025-09-07+%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE+9.46.39.png").build()
+                Product.builder().name("흑돼지 돼랑이").category(ProductCategory.JEJU_TICON).hallabongCost(2000).stock(999).imageUrl("https://jejudaybucket123.s3.ap-northeast-2.amazonaws.com/item-images/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA+2025-09-07+%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE+9.46.13.png").build(),
+                Product.builder().name("해녀 흑돼지").category(ProductCategory.JEJU_TICON).hallabongCost(2000).stock(999).imageUrl("https://jejudaybucket123.s3.ap-northeast-2.amazonaws.com/item-images/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA+2025-09-07+%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE+9.46.23.png").build(),
+                Product.builder().name("감귤이").category(ProductCategory.JEJU_TICON).hallabongCost(2000).stock(999).imageUrl("https://jejudaybucket123.s3.ap-northeast-2.amazonaws.com/item-images/%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA+2025-09-07+%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE+9.46.39.png").build()
         );
 
         productRepository.saveAll(products);
