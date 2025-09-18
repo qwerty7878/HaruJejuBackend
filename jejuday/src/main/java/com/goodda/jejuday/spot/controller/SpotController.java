@@ -2,10 +2,7 @@ package com.goodda.jejuday.spot.controller;
 
 import com.goodda.jejuday.auth.dto.ApiResponse;
 import com.goodda.jejuday.auth.entity.User;
-import com.goodda.jejuday.spot.dto.SpotCreateRequestDTO;
-import com.goodda.jejuday.spot.dto.SpotDetailResponse;
-import com.goodda.jejuday.spot.dto.SpotResponse;
-import com.goodda.jejuday.spot.dto.SpotUpdateRequest;
+import com.goodda.jejuday.spot.dto.*;
 import com.goodda.jejuday.spot.service.SpotService;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -45,7 +42,7 @@ public class SpotController {
     // TODO : 검색 조회랑 합칠 필요가 있음. 09/02
     @Description("(1) 홈 화면 > 위치 마커 조회")
     @GetMapping("/nearby")
-    public ResponseEntity<ApiResponse<List<SpotResponse>>> getNearby(
+    public ResponseEntity<ApiResponse<List<NearSpotResponse>>> getNearby(
             @RequestParam BigDecimal lat,
             @RequestParam BigDecimal lng,
             @RequestParam(defaultValue = "5") int radiusKm

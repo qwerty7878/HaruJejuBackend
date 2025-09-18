@@ -19,7 +19,7 @@ import java.util.Optional;
 
 public interface SpotRepository extends JpaRepository<Spot, Long> {
     @Query(value = """
-    SELECT * FROM Spot s
+    SELECT * FROM spot s
     WHERE s.is_deleted = false AND (
         6371 * acos(
             cos(radians(:lat)) *

@@ -3,10 +3,7 @@ package com.goodda.jejuday.spot.service;
 import com.goodda.jejuday.auth.entity.User;
 import com.goodda.jejuday.auth.repository.UserThemeRepository;
 import com.goodda.jejuday.auth.util.SecurityUtil;
-import com.goodda.jejuday.spot.dto.SpotCreateRequestDTO;
-import com.goodda.jejuday.spot.dto.SpotDetailResponse;
-import com.goodda.jejuday.spot.dto.SpotResponse;
-import com.goodda.jejuday.spot.dto.SpotUpdateRequest;
+import com.goodda.jejuday.spot.dto.*;
 import com.goodda.jejuday.spot.entity.Bookmark;
 import com.goodda.jejuday.spot.entity.Like;
 import com.goodda.jejuday.spot.entity.Spot;
@@ -60,10 +57,10 @@ public class SpotServiceImpl implements SpotService {
 
     // 1
     @Override
-    public List<SpotResponse> getNearbySpots(BigDecimal lat, BigDecimal lng, int radiusKm) {
+    public List<NearSpotResponse> getNearbySpots(BigDecimal lat, BigDecimal lng, int radiusKm) {
         return spotRepository.findWithinRadius(lat, lng, radiusKm).stream()
                 .filter(s -> s.getType() == Spot.SpotType.SPOT || s.getType() == Spot.SpotType.CHALLENGE)
-                .map(s -> SpotResponse.fromEntity(
+                .map(s -> NearSpotResponse.fromEntity(
                         s,
                         likeRepository.countByTargetIdAndTargetType(s.getId(), Like.TargetType.SPOT),
                         false
