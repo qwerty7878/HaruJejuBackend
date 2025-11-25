@@ -16,8 +16,8 @@ public class FirebaseConfig {
     @Bean
     public FirebaseMessaging firebaseMessaging() {
         try {
-            ClassPathResource resource = new ClassPathResource("/etc/secrets/jejuday.json");
-            InputStream serviceAccount = resource.getInputStream();
+            String credentialsPath = "/etc/secrets/jejuday.json";
+            FileInputStream serviceAccount = new FileInputStream(credentialsPath);
 
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
