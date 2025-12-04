@@ -5,6 +5,8 @@ import com.goodda.jejuday.spot.entity.Like;
 import com.goodda.jejuday.spot.entity.Spot;
 import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -84,4 +86,8 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
         GROUP BY l.spot.id
     """)
     List<Object[]> getLikeCountMapForSpotsDirect(@Param("spotIds") List<Long> spotIds);
+
+    // 사용자가 좋아요한 스팟 조회 - 페이징 지원
+    @Query("SELECT l.spot FROM Like l JOIN FETCH l.spot.user WHERE l.user.id = :userId AND l.targetType = :targetType AND (l.spot.isDeleted = false OR l.spot.isDeleted IS NULL) ORDER BY l.likedAt DESC")
+    Page<Spot> findLikedSpotsByUserId(@Param("userId") Long userId, @Param("targetType") Like.TargetType targetType, Pageable pageable);
 }

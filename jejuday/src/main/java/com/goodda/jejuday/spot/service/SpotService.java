@@ -28,4 +28,9 @@ public interface SpotService {
     Page<SpotResponse> getMostViewedSpots(Pageable pageable);
     Page<SpotResponse> getMostLikedSpots(Pageable pageable);
 
+    // 마이페이지 관련 메서드
+    Page<SpotResponse> getMyPosts(Pageable pageable, String sort);
+    Page<ReplyDTO> getMyComments(Pageable pageable);
+    Page<SpotResponse> getMyLikedSpots(Pageable pageable);
+
 }

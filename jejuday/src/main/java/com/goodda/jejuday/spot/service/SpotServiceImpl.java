@@ -6,10 +6,12 @@ import com.goodda.jejuday.auth.util.SecurityUtil;
 import com.goodda.jejuday.spot.dto.*;
 import com.goodda.jejuday.spot.entity.Bookmark;
 import com.goodda.jejuday.spot.entity.Like;
+import com.goodda.jejuday.spot.entity.Reply;
 import com.goodda.jejuday.spot.entity.Spot;
 import com.goodda.jejuday.spot.entity.SpotViewLog;
 import com.goodda.jejuday.spot.repository.BookmarkRepository;
 import com.goodda.jejuday.spot.repository.LikeRepository;
+import com.goodda.jejuday.spot.repository.ReplyRepository;
 import com.goodda.jejuday.spot.repository.SpotRepository;
 import com.goodda.jejuday.spot.repository.SpotViewLogRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -26,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,6 +38,7 @@ import java.util.stream.Collectors;
 public class SpotServiceImpl implements SpotService {
     private final SpotRepository spotRepository;
     private final LikeRepository likeRepository;
+    private final ReplyRepository replyRepository;
     private final BookmarkRepository bookmarkRepository;
     private final SpotViewLogRepository viewLogRepository;
 //    private final UserRepository userRepository;
@@ -370,5 +374,108 @@ public class SpotServiceImpl implements SpotService {
             urls.add(putS3(f, key, metadataOf(f)));
         }
         return urls;
+    }
+
+    // 마이페이지 관련 메서드
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Page<SpotResponse> getMyPosts(Pageable pageable, String sort) {
+        User user = securityUtil.getAuthenticatedUser();
+        Page<Spot> spots;
+        
+        // 정렬 기준에 따라 다른 쿼리 사용
+        switch (sort != null ? sort.toLowerCase() : "latest") {
+            case "views":
+                spots = spotRepository.findByUserIdOrderByViewCountDesc(user.getId(), pageable);
+                break;
+            case "comments":
+                // 댓글 많은 순은 메모리에서 정렬 (표시만)
+                spots = spotRepository.findByUserIdOrderByCreatedAtDescForCommentSort(user.getId(), pageable);
+                // TODO: 댓글 많은 순 정렬 구현 (현재는 최신순으로 반환)
+                break;
+            case "latest":
+            default:
+                spots = spotRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
+                break;
+        }
+        
+        // 현재 사용자가 좋아요한 스팟 ID 목록 조회 (배치 처리)
+        List<Long> spotIds = spots.getContent().stream().map(Spot::getId).collect(Collectors.toList());
+        Set<Long> likedSpotIds = new HashSet<>();
+        if (!spotIds.isEmpty()) {
+            likedSpotIds = new HashSet<>(likeRepository.findLikedTargetIds(
+                    user.getId(), spotIds, Like.TargetType.SPOT));
+        }
+        
+        final Set<Long> finalLikedSpotIds = likedSpotIds;
+        return spots.map(spot -> SpotResponse.fromEntity(
+                spot,
+                (int) likeRepository.countBySpotId(spot.getId()),
+                finalLikedSpotIds.contains(spot.getId())
+        ));
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Page<ReplyDTO> getMyComments(Pageable pageable) {
+        User user = securityUtil.getAuthenticatedUser();
+        Page<Reply> replies = replyRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
+        
+        return replies.map(this::toReplyDTO);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Page<SpotResponse> getMyLikedSpots(Pageable pageable) {
+        User user = securityUtil.getAuthenticatedUser();
+        Page<Spot> likedSpots = likeRepository.findLikedSpotsByUserId(user.getId(), Like.TargetType.SPOT, pageable);
+        
+        // 모든 스팟에 좋아요를 눌렀으므로 likedByMe는 항상 true
+        return likedSpots.map(spot -> SpotResponse.fromEntity(
+                spot,
+                (int) likeRepository.countBySpotId(spot.getId()),
+                true
+        ));
+    }
+
+    // Reply 엔티티를 ReplyDTO로 변환
+    private ReplyDTO toReplyDTO(Reply reply) {
+        ReplyDTO dto = new ReplyDTO();
+        dto.setId(reply.getId());
+        dto.setContentId(reply.getContentId());
+        dto.setDepth(reply.getDepth());
+        dto.setParentReplyId(reply.getParentReply() != null ? reply.getParentReply().getId() : null);
+        dto.setMemberId(reply.getUser().getId());
+        dto.setMemberNickname(reply.getUser().getNickname());
+        dto.setText(reply.getIsDeleted() ? "삭제된 댓글입니다." : reply.getText());
+        dto.setRelativeTime(calculateRelativeTime(reply.getCreatedAt()));
+        dto.setIsDeleted(reply.getIsDeleted());
+        dto.setCreatedAt(reply.getCreatedAt());
+        return dto;
+    }
+
+    // 상대 시간 계산 (예: "5분 전", "2시간 전", "3일 전")
+    private String calculateRelativeTime(LocalDateTime createdAt) {
+        if (createdAt == null) {
+            return "";
+        }
+        
+        LocalDateTime now = LocalDateTime.now();
+        Duration duration = Duration.between(createdAt, now);
+        
+        long seconds = duration.getSeconds();
+        
+        if (seconds < 60) {
+            return "방금 전";
+        } else if (seconds < 3600) {
+            long minutes = seconds / 60;
+            return minutes + "분 전";
+        } else if (seconds < 86400) {
+            long hours = seconds / 3600;
+            return hours + "시간 전";
+        } else {
+            long days = seconds / 86400;
+            return days + "일 전";
+        }
     }
 }

@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationService implements NotificationServiceImpl {
 
     private final NotificationRepository notificationRepository;
-    private final FirebaseMessaging firebaseMessaging;
+    @Autowired(required = false)
+    private FirebaseMessaging firebaseMessaging;
     private final RedisTemplate<String, String> redisTemplate;
     private final NotificationValidator notificationValidator;
     private final NotificationCacheManager cacheManager;
@@ -101,6 +103,11 @@ public class NotificationService implements NotificationServiceImpl {
 
     private CompletableFuture<Void> sendFcmNotificationAsync(String token, String message) {
         return CompletableFuture.runAsync(() -> {
+            if (firebaseMessaging == null) {
+                log.warn("FirebaseMessaging is not available. Skipping FCM notification.");
+                return;
+            }
+            
             try {
                 Message fcmMessage = createFcmMessage(token, message);
                 ApiFuture<String> response = firebaseMessaging.sendAsync(fcmMessage);

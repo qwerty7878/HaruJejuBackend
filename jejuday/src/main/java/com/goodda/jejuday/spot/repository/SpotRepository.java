@@ -131,4 +131,19 @@ public interface SpotRepository extends JpaRepository<Spot, Long> {
 """)
     List<Spot> findAnyChallengeSpot(org.springframework.data.domain.Pageable pageable);
 
+    // 사용자가 작성한 게시글 조회 (삭제되지 않은 것만) - 페이징 지원
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT s FROM Spot s WHERE s.user.id = :userId AND (s.isDeleted = false OR s.isDeleted IS NULL) ORDER BY s.createdAt DESC")
+    Page<Spot> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId, Pageable pageable);
+    
+    // 사용자가 작성한 게시글 조회 - 조회수순
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT s FROM Spot s WHERE s.user.id = :userId AND (s.isDeleted = false OR s.isDeleted IS NULL) ORDER BY s.viewCount DESC")
+    Page<Spot> findByUserIdOrderByViewCountDesc(@Param("userId") Long userId, Pageable pageable);
+    
+    // 사용자가 작성한 게시글 조회 - 댓글 많은 순 (댓글 수는 서비스 레이어에서 계산)
+    @EntityGraph(attributePaths = {"user"})
+    @Query("SELECT s FROM Spot s WHERE s.user.id = :userId AND (s.isDeleted = false OR s.isDeleted IS NULL) ORDER BY s.createdAt DESC")
+    Page<Spot> findByUserIdOrderByCreatedAtDescForCommentSort(@Param("userId") Long userId, Pageable pageable);
+
 }
