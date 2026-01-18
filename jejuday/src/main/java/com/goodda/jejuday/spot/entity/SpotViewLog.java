@@ -17,8 +17,8 @@ public class SpotViewLog {
     private Long id;
 
     // 어느 Spot 조회인지
-    @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "spot_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "spot_id", nullable = false)
     private Spot spot;
 
     // 로그인 유저일 때
