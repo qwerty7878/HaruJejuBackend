@@ -22,13 +22,18 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+            jejuday/.gradle/caches
+            jejuday/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('jejuday/**/*.gradle*', 'jejuday/**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Make gradlew executable
+        working-directory: ./jejuday
+        run: chmod +x gradlew
+
       - name: Build without tests
+        working-directory: ./jejuday
         run: ./gradlew clean build -x test --no-daemon
 
       - name: Deploy to Render via Deploy Hook
