@@ -33,8 +33,9 @@ spring:
           time-between-eviction-runs: 5s
 
   jpa:
+    defer-datasource-initialization: true
     hibernate:
-      ddl-auto: create
+      ddl-auto: create-drop
     show-sql: true
     properties:
       hibernate:
