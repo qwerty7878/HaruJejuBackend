@@ -6,7 +6,7 @@ spring:
 #    active: dev
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${DATABASE_URL}
+    url: jdbc:postgresql://dpg-d5mkqtd6ubrc73aa8s4g-a:5432/jejuday?sslmode=require
     username: ${DATABASE_USER}
     password: ${DATABASE_PASSWORD}
 #    url: jdbc:mysql://localhost:3306/jejuday?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
