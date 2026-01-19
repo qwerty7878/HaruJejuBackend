@@ -67,7 +67,7 @@ public class Spot {
     @Column(name = "point", columnDefinition = "INT DEFAULT 0")
     private Integer point = 0;  // user 의 한라봉과 외래키 관계.
 
-    @Column(name = "is_deleted", columnDefinition = "TINYINT(1) DEFAULT 0")
+    @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
     
     @Column(name = "deleted_at")
