@@ -81,6 +81,10 @@
 
 ### 🏗️ 시스템 아키텍처
 
+---
+
+<img width="685" height="486" alt="스크린샷 2026-02-12 오전 12 17 21" src="https://github.com/user-attachments/assets/4e06f0ae-6319-4baf-a568-b4809ecb8095" />
+
 
 ## 💻 개발 내용
 
@@ -140,8 +144,8 @@
     <td align="center"><b>커뮤니티</b><br><img src="https://github.com/user-attachments/assets/af252fb6-2a76-4430-882f-d0a7c5fdba77" width="100%"></td>
   </tr>
   <tr>
-    <td align="center"><b>한라봉으로 구매하기</b><br><img src="https://github.com/user-attachments/assets/a8ae1e08-1acf-44f4-aed0-4434ab40254c" width="100%"></td>
-    <td align="center"><b>마이페이지/랭킹</b><br><img src="https://github.com/user-attachments/assets/e788997b-6aa6-4505-91e1-e37bd1959954" width="100%"></td>
+    <td align="center"><b>챌린지</b><br><img src="https://github.com/user-attachments/assets/a8ae1e08-1acf-44f4-aed0-4434ab40254c" width="100%"></td>
+    <td align="center"><b>한라봉으로 구매하기</b><br><img src="https://github.com/user-attachments/assets/e788997b-6aa6-4505-91e1-e37bd1959954" width="100%"></td>
   </tr>
 </table>
 
