@@ -35,7 +35,7 @@
 **Backend**
 
 - Java, Spring Boot, JPA, Spring Security(OAuth2/JWT), Thymeleaf, WebSocket
-- PostgreSQL(AWS RDS MySQL → Render PostgreSQL 전환), Redis, FCM
+- PostgreSQL, Redis, FCM
 
 **Frontend**
 
@@ -43,8 +43,44 @@
 
 **Infra**
 
-- AWS EC2, S3, RDS, Route 53, Nginx, Docker, Render
+- AWS EC2, S3, RDS, Route 53, Nginx, Docker
 - Slack, Jira, Git, Swagger, Github Actions
+
+## 🗺️ ERD 다이어그램
+
+---
+
+<img width="1017" height="596" alt="스크린샷 2025-06-05 오후 10 29 09" src="https://github.com/user-attachments/assets/ec0a8a89-1769-45ba-9091-22bb575db47e" />
+
+## 📖 API 명세서
+
+---
+
+<table>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/db6b3982-df79-4e4d-8d9c-19beb01e0e3f" width="100%"></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/d0b72ca5-a487-410d-a25b-252762423633" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/6558329c-dd92-48ff-b59e-60b88edbfb84" width="100%"></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/331972a8-2218-4bf0-be8b-826e5e81199c" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/520d57a1-ef7c-4448-8456-f25a95ada9fb" width="100%"></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/c4201fc3-f49f-4a28-9f1a-cd290e889f23" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/6505ddec-22f9-4c9c-bfdd-98f570c0384b" width="100%"></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/c9229e40-5525-4e2b-a096-a616931764e1" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/da9b1d9e-7ceb-4eae-b487-c77802456b09" width="100%"></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/099a2174-3f60-47fb-9878-baa8dfd8807a" width="100%"></td>
+  </tr>
+</table>
+
+### 🏗️ 시스템 아키텍처
+
 
 ## 💻 개발 내용
 
@@ -98,11 +134,14 @@
 
 ---
 
-<img width="1300" height="1300" alt="image" src="https://github.com/user-attachments/assets/256de8d3-702f-490c-b4fe-15551cbf8d05" />
-
-<img width="1300" height="1300" alt="image" src="https://github.com/user-attachments/assets/af252fb6-2a76-4430-882f-d0a7c5fdba77" />
-
-<img width="1300" height="1300" alt="image" src="https://github.com/user-attachments/assets/a8ae1e08-1acf-44f4-aed0-4434ab40254c" />
-
-<img width="1300" height="1300" alt="image" src="https://github.com/user-attachments/assets/e788997b-6aa6-4505-91e1-e37bd1959954" />
+<table>
+  <tr>
+    <td align="center"><b>스팟 추가</b><br><img src="https://github.com/user-attachments/assets/256de8d3-702f-490c-b4fe-15551cbf8d05" width="100%"></td>
+    <td align="center"><b>커뮤니티</b><br><img src="https://github.com/user-attachments/assets/af252fb6-2a76-4430-882f-d0a7c5fdba77" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>한라봉으로 구매하기</b><br><img src="https://github.com/user-attachments/assets/a8ae1e08-1acf-44f4-aed0-4434ab40254c" width="100%"></td>
+    <td align="center"><b>마이페이지/랭킹</b><br><img src="https://github.com/user-attachments/assets/e788997b-6aa6-4505-91e1-e37bd1959954" width="100%"></td>
+  </tr>
+</table>
 
