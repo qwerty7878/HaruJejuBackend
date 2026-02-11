@@ -1,6 +1,4 @@
-![ImageToStl.com_merged-document.jpg](attachment:eaef06f7-2ec4-4b1e-965a-bf97453600f4:ImageToStl.com_merged-document.jpg)
-
-**🔗 GitHub Repository**: https://github.com/TourContest/Backend
+<img width="2600" height="1300" alt="image" src="https://github.com/user-attachments/assets/952e3083-26e9-48a2-b94b-ae0f62a156a8" />
 
 ## 📜 서비스 소개
 
@@ -100,10 +98,11 @@
 
 ---
 
-![3.png](attachment:48664fc8-6fb7-491a-89e8-d98e020fa70f:3.png)
+<img width="1300" height="1300" alt="image" src="https://github.com/user-attachments/assets/256de8d3-702f-490c-b4fe-15551cbf8d05" />
 
-![4.png](attachment:09af61cc-30df-4ab1-bddb-fccf750f0367:4.png)
+<img width="1300" height="1300" alt="image" src="https://github.com/user-attachments/assets/af252fb6-2a76-4430-882f-d0a7c5fdba77" />
 
-![5.png](attachment:f808c816-b152-4fd5-89f6-9ec783c5ed66:5.png)
+<img width="1300" height="1300" alt="image" src="https://github.com/user-attachments/assets/a8ae1e08-1acf-44f4-aed0-4434ab40254c" />
 
-![6.png](attachment:53989f76-5ea3-4115-aa61-b0605cb07b88:6.png)
+<img width="1300" height="1300" alt="image" src="https://github.com/user-attachments/assets/e788997b-6aa6-4505-91e1-e37bd1959954" />
+
