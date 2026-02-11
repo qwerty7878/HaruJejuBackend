@@ -35,7 +35,7 @@
 **Backend**
 
 - Java, Spring Boot, JPA, Spring Security(OAuth2/JWT), Thymeleaf, WebSocket
-- PostgreSQL, Redis, FCM
+- MySQL, Redis, FCM
 
 **Frontend**
 
