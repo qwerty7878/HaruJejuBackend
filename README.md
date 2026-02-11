@@ -46,45 +46,6 @@
 - AWS EC2, S3, RDS, Route 53, Nginx, Docker
 - Slack, Jira, Git, Swagger, Github Actions
 
-## 🗺️ ERD 다이어그램
-
----
-
-<img width="1017" height="596" alt="스크린샷 2025-06-05 오후 10 29 09" src="https://github.com/user-attachments/assets/ec0a8a89-1769-45ba-9091-22bb575db47e" />
-
-## 📖 API 명세서
-
----
-
-<table>
-  <tr>
-    <td align="center"><img src="https://github.com/user-attachments/assets/db6b3982-df79-4e4d-8d9c-19beb01e0e3f" width="100%"></td>
-    <td align="center"><img src="https://github.com/user-attachments/assets/d0b72ca5-a487-410d-a25b-252762423633" width="100%"></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="https://github.com/user-attachments/assets/6558329c-dd92-48ff-b59e-60b88edbfb84" width="100%"></td>
-    <td align="center"><img src="https://github.com/user-attachments/assets/331972a8-2218-4bf0-be8b-826e5e81199c" width="100%"></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="https://github.com/user-attachments/assets/520d57a1-ef7c-4448-8456-f25a95ada9fb" width="100%"></td>
-    <td align="center"><img src="https://github.com/user-attachments/assets/c4201fc3-f49f-4a28-9f1a-cd290e889f23" width="100%"></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="https://github.com/user-attachments/assets/6505ddec-22f9-4c9c-bfdd-98f570c0384b" width="100%"></td>
-    <td align="center"><img src="https://github.com/user-attachments/assets/c9229e40-5525-4e2b-a096-a616931764e1" width="100%"></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="https://github.com/user-attachments/assets/da9b1d9e-7ceb-4eae-b487-c77802456b09" width="100%"></td>
-    <td align="center"><img src="https://github.com/user-attachments/assets/099a2174-3f60-47fb-9878-baa8dfd8807a" width="100%"></td>
-  </tr>
-</table>
-
-### 🏗️ 시스템 아키텍처
-
----
-
-<img width="685" height="486" alt="스크린샷 2026-02-12 오전 12 17 21" src="https://github.com/user-attachments/assets/4e06f0ae-6319-4baf-a568-b4809ecb8095" />
-
 
 ## 💻 개발 내용
 
@@ -133,6 +94,46 @@
 - 걸음수 → 한라봉 포인트 컨버터 API 연동
 - 다양한 진입 경로에서도 동작하는 공통 BackHeader 네비게이션 구현
 - ProductDetailPage에서 제주티콘 중복 구매 시 에러 토스트 처리
+
+## 🗺️ ERD 다이어그램
+
+---
+
+<img width="1017" height="596" alt="스크린샷 2025-06-05 오후 10 29 09" src="https://github.com/user-attachments/assets/ec0a8a89-1769-45ba-9091-22bb575db47e" />
+
+## 📖 API 명세서
+
+---
+
+<table>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/db6b3982-df79-4e4d-8d9c-19beb01e0e3f" width="100%"></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/d0b72ca5-a487-410d-a25b-252762423633" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/6558329c-dd92-48ff-b59e-60b88edbfb84" width="100%"></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/331972a8-2218-4bf0-be8b-826e5e81199c" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/520d57a1-ef7c-4448-8456-f25a95ada9fb" width="100%"></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/c4201fc3-f49f-4a28-9f1a-cd290e889f23" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/6505ddec-22f9-4c9c-bfdd-98f570c0384b" width="100%"></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/c9229e40-5525-4e2b-a096-a616931764e1" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/da9b1d9e-7ceb-4eae-b487-c77802456b09" width="100%"></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/099a2174-3f60-47fb-9878-baa8dfd8807a" width="100%"></td>
+  </tr>
+</table>
+
+### 🏗️ 시스템 아키텍처
+
+---
+
+<img width="685" height="486" alt="스크린샷 2026-02-12 오전 12 17 21" src="https://github.com/user-attachments/assets/4e06f0ae-6319-4baf-a568-b4809ecb8095" />
+
 
 ## 📺 서비스 화면
 
