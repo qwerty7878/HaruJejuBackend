@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.goodda.jejuday.auth.dto.KakaoDTO;
 import com.goodda.jejuday.auth.entity.Gender;
-import com.goodda.jejuday.auth.entity.Language;
 import com.goodda.jejuday.auth.entity.Platform;
 import com.goodda.jejuday.auth.entity.User;
 import com.goodda.jejuday.auth.entity.UserTheme;
@@ -181,7 +180,7 @@ public class KakaoService {
 
     @Transactional
     public User registerKakaoUser(String email, String nickname, String profileUrl,
-                                  Set<String> themeNames, Gender gender, Language language, String birthYear, String referrerNickname) {
+                                  Set<String> themeNames, Gender gender, String birthYear, String referrerNickname) {
 
         if (userRepository.existsByNickname(nickname)) {
             throw new BadRequestException("이미 사용 중인 닉네임입니다.");
@@ -195,18 +194,16 @@ public class KakaoService {
                 : Set.of();
 
         User user = User.builder()
-                .name(nickname) // 카카오는 name = nickname 간주
+                .nickname(nickname) // 카카오는 name = nickname 간주
                 .email(email)
                 .password(null)
                 .nickname(nickname)
                 .platform(Platform.KAKAO)
-                .language(language)
                 .gender(gender)
                 .birthYear(birthYear)
                 .profile(profileUrl)
                 .userThemes(userThemes)
                 .createdAt(LocalDateTime.now())
-                .isKakaoLogin(true)
                 .hallabong(0)
                 .build();
 

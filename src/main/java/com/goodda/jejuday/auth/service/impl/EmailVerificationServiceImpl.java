@@ -1,162 +1,142 @@
 package com.goodda.jejuday.auth.service.impl;
 
 import com.goodda.jejuday.auth.entity.EmailVerification;
-import com.goodda.jejuday.auth.entity.TemporaryUser;
 import com.goodda.jejuday.auth.entity.User;
+import com.goodda.jejuday.auth.entity.VerificationType;
 import com.goodda.jejuday.auth.repository.EmailVerificationRepository;
-import com.goodda.jejuday.auth.repository.TemporaryUserRepository;
 import com.goodda.jejuday.auth.service.EmailVerificationService;
 import com.goodda.jejuday.common.exception.EmailSendingException;
-import java.time.LocalDateTime;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     private final EmailVerificationRepository emailVerificationRepository;
-    private final TemporaryUserRepository temporaryUserRepository;
 
-    @Override
-    public void deleteVerificationByTemporaryUserEmail(String email) {
-        emailVerificationRepository.findByTemporaryUser_Email(email).ifPresent(emailVerificationRepository::delete);
-    }
+    private static final int VERIFICATION_CODE_EXPIRY_MINUTES = 3;
+    private static final int VERIFIED_CODE_RETENTION_MINUTES = 5;
 
-    @Override
-    public void deleteVerificationByUserEmail(String email) {
-        emailVerificationRepository.findByUser_Email(email).ifPresent(emailVerificationRepository::delete);
-    }
-
+//    이메일 인증 코드 저장 (회원가입 또는 비밀번호 재설정용)
     @Override
     @Transactional
-    public void saveVerificationForTemporaryUser(TemporaryUser temporaryUser, String code) {
-        EmailVerification emailVerification = EmailVerification.builder()
-                .temporaryUser(temporaryUser)
+    public void saveVerificationCode(String email, String code, VerificationType type) {
+        // 기존 미인증 코드 삭제
+        List<EmailVerification> existingCodes = emailVerificationRepository
+                .findByEmailAndVerificationTypeAndIsVerifiedFalse(email, type);
+
+        if (!existingCodes.isEmpty()) {
+            emailVerificationRepository.deleteAll(existingCodes);
+        }
+
+        // 새 인증 코드 생성
+        EmailVerification verification = EmailVerification.builder()
+                .email(email)
                 .verificationCode(code)
+                .verificationType(type)
                 .isVerified(false)
                 .createdAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusMinutes(3))
+                .expiresAt(LocalDateTime.now().plusMinutes(VERIFICATION_CODE_EXPIRY_MINUTES))
                 .build();
-        emailVerificationRepository.save(emailVerification);
+
+        emailVerificationRepository.save(verification);
     }
 
+//    비밀번호 재설정용 인증 코드 저장 (User 연결)
     @Override
     @Transactional
-    public void saveVerificationForUser(User user, String code) {
-        EmailVerification emailVerification = EmailVerification.builder()
+    public void saveVerificationCodeForUser(User user, String code) {
+        // 기존 미인증 코드 삭제
+        List<EmailVerification> existingCodes = emailVerificationRepository
+                .findByEmailAndVerificationTypeAndIsVerifiedFalse(
+                        user.getEmail(), VerificationType.PASSWORD_RESET);
+
+        if (!existingCodes.isEmpty()) {
+            emailVerificationRepository.deleteAll(existingCodes);
+        }
+
+        // 새 인증 코드 생성
+        EmailVerification verification = EmailVerification.builder()
                 .user(user)
+                .email(user.getEmail())
                 .verificationCode(code)
+                .verificationType(VerificationType.PASSWORD_RESET)
                 .isVerified(false)
                 .createdAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusMinutes(3))
+                .expiresAt(LocalDateTime.now().plusMinutes(VERIFICATION_CODE_EXPIRY_MINUTES))
                 .build();
-        emailVerificationRepository.save(emailVerification);
+
+        emailVerificationRepository.save(verification);
+        log.info("Password reset verification code saved for user: {}", user.getEmail());
     }
 
+//    인증 코드 검증
     @Override
-    public boolean verifyTemporaryUserCode(String email, String code) {
-        TemporaryUser temporaryUser = temporaryUserRepository.findByEmail(email)
-                .orElseThrow(() -> new EmailSendingException("임시 사용자가 존재하지 않습니다."));
-
-        EmailVerification emailVerification = emailVerificationRepository.findTopByTemporaryUserAndIsVerifiedFalseOrderByCreatedAtDesc(
-                        temporaryUser)
+    @Transactional
+    public boolean verifyCode(String email, String code, VerificationType type) {
+        // 가장 최근 미인증 코드 조회
+        EmailVerification verification = emailVerificationRepository
+                .findTopByEmailAndVerificationTypeAndIsVerifiedFalseOrderByCreatedAtDesc(email, type)
                 .orElseThrow(() -> new EmailSendingException("인증 기록이 없습니다."));
 
-        if (emailVerification.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new EmailSendingException("인증 코드가 만료되었습니다.");
+        // 만료 확인
+        if (verification.isExpired()) {
+            throw new EmailSendingException("인증 코드가 만료되었습니다. 새로운 인증 코드를 요청해주세요.");
         }
 
-        if (!emailVerification.getVerificationCode().equals(code)) {
-            throw new EmailSendingException("인증 코드가 일치하지 않습니다.");
-        }
-
-        emailVerification.setVerified(true);
-        emailVerificationRepository.save(emailVerification);
-        return true;
-    }
-
-    @Override
-    public boolean verifyUserCode(String email, String code) {
-        EmailVerification verification = emailVerificationRepository.findByUser_Email(email)
-                .orElseThrow(() -> new EmailSendingException("인증 기록이 없습니다."));
-
-        if (verification.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new EmailSendingException("인증 코드가 만료되었습니다.");
-        }
-
+        // 코드 일치 확인
         if (!verification.getVerificationCode().equals(code)) {
             throw new EmailSendingException("인증 코드가 일치하지 않습니다.");
         }
 
-        emailVerificationRepository.delete(verification);
+        // 인증 완료 처리
+        verification.markAsVerified();
+        emailVerificationRepository.save(verification);
+
         return true;
     }
 
+//    인증 완료 여부 확인 (회원가입 시 사용)
     @Override
-    public boolean isTemporaryUserVerified(String email) {
-        TemporaryUser temporaryUser = temporaryUserRepository.findByEmail(email)
-                .orElseThrow(() -> new EmailSendingException("임시 사용자가 존재하지 않습니다."));
-
-        return emailVerificationRepository.findTopByTemporaryUserAndIsVerifiedTrueOrderByCreatedAtDesc(temporaryUser)
+    @Transactional(readOnly = true)
+    public boolean isEmailVerified(String email, VerificationType type) {
+        return emailVerificationRepository
+                .findTopByEmailAndVerificationTypeAndIsVerifiedTrueOrderByCreatedAtDesc(email, type)
+                .filter(verification -> {
+                    // 인증 완료 후 5분 이내만 유효
+                    LocalDateTime cutoff = LocalDateTime.now().minusMinutes(VERIFIED_CODE_RETENTION_MINUTES);
+                    return verification.getVerifiedAt() != null
+                            && verification.getVerifiedAt().isAfter(cutoff);
+                })
                 .isPresent();
     }
 
-    // ================================
-    // 새로운 회원가입 플로우를 위한 메서드들
-    // ================================
-
-    /**
-     * 회원가입용 이메일 인증 코드 검증 (임시 사용자 없이)
-     */
-    @Override
-    public boolean verifyEmailCodeForRegistration(String email, String code) {
-        EmailVerification emailVerification = emailVerificationRepository.findTopByEmailAndIsVerifiedFalseOrderByCreatedAtDesc(email)
-                .orElseThrow(() -> new EmailSendingException("인증 기록이 없습니다."));
-
-        if (emailVerification.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new EmailSendingException("인증 코드가 만료되었습니다.");
-        }
-
-        if (!emailVerification.getVerificationCode().equals(code)) {
-            throw new EmailSendingException("인증 코드가 일치하지 않습니다.");
-        }
-
-        emailVerification.setVerified(true);
-        emailVerificationRepository.save(emailVerification);
-        return true;
-    }
-
-    /**
-     * 회원가입용 이메일 인증 완료 여부 확인
-     */
-    @Override
-    public boolean isEmailVerifiedForRegistration(String email) {
-        return emailVerificationRepository.findTopByEmailAndIsVerifiedTrueOrderByCreatedAtDesc(email)
-                .isPresent();
-    }
-
-    /**
-     * 회원가입용 이메일 인증 정보 저장 (임시 사용자 없이)
-     */
+//    인증 완료된 코드 삭제 (회원가입 완료 후 호출)
     @Override
     @Transactional
-    public void saveEmailVerificationForRegistration(String email, String code) {
-        // 기존 미인증 인증코드가 있다면 삭제
-        List<EmailVerification> existingVerifications = emailVerificationRepository.findByEmailAndIsVerifiedFalse(email);
-        if (!existingVerifications.isEmpty()) {
-            emailVerificationRepository.deleteAll(existingVerifications);
-        }
+    public void deleteVerifiedCode(String email, VerificationType type) {
+        emailVerificationRepository
+                .findTopByEmailAndVerificationTypeAndIsVerifiedTrueOrderByCreatedAtDesc(email, type)
+                .ifPresent(verification -> {
+                    emailVerificationRepository.delete(verification);
+                });
+    }
 
-        EmailVerification emailVerification = EmailVerification.builder()
-                .email(email)
-                .verificationCode(code)
-                .isVerified(false)
-                .createdAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusMinutes(3))
-                .build();
-        emailVerificationRepository.save(emailVerification);
+//    만료된 인증 코드 정리 (스케줄러에서 호출)
+    @Override
+    @Transactional
+    public void cleanupExpiredVerifications() {
+        // 만료된 미인증 코드 삭제
+        emailVerificationRepository.deleteExpiredVerifications(LocalDateTime.now());
+
+        // 1일 이전의 인증 완료된 코드 삭제
+        emailVerificationRepository.deleteOldVerifiedCodes(LocalDateTime.now().minusDays(1));
     }
 }
