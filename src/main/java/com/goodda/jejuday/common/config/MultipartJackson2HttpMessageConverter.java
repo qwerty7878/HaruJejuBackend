@@ -1,4 +1,4 @@
-package com.goodda.jejuday.auth.config;
+package com.goodda.jejuday.common.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.MediaType;

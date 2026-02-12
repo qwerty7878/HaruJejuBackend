@@ -1,4 +1,4 @@
-package com.goodda.jejuday.auth.config;
+package com.goodda.jejuday.common.config;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;

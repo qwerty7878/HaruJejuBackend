@@ -43,3 +43,4 @@ out/
 /*.xml
 /src/main/resources/firebase
 
+/.gradle

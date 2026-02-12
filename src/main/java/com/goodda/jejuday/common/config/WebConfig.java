@@ -1,4 +1,4 @@
-package com.goodda.jejuday.auth.config;
+package com.goodda.jejuday.common.config;
 
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
