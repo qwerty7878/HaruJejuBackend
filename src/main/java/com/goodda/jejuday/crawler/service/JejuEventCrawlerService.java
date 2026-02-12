@@ -3,6 +3,7 @@ package com.goodda.jejuday.crawler.service;
 import com.goodda.jejuday.crawler.entitiy.JejuEvent;
 import com.goodda.jejuday.crawler.repository.JejuEventRepository;
 import io.github.bonigarcia.wdm.WebDriverManager;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -11,8 +12,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,15 +22,17 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Slf4j
 @Service
 public class JejuEventCrawlerService {
 
-    private static final Logger log = LoggerFactory.getLogger(JejuEventCrawlerService.class);
-
     private final JejuEventRepository repository;
+    private final Semaphore crawlerSemaphore;
     private final DateTimeFormatter periodFmt = DateTimeFormatter.ofPattern("yyyy.MM.dd");
     private static final Duration WAIT_TIMEOUT = Duration.ofSeconds(12);
 
@@ -39,12 +41,14 @@ public class JejuEventCrawlerService {
     private static final Pattern TWO_NUMBERS = Pattern.compile("(\\d+)");
     private static final Pattern CONTENTSID = Pattern.compile("contentsid=([^&#]+)");
 
-    public JejuEventCrawlerService(JejuEventRepository repository) {
+    public JejuEventCrawlerService(JejuEventRepository repository, Semaphore crawlerSemaphore) {
         this.repository = repository;
+        this.crawlerSemaphore = crawlerSemaphore;
     }
 
     /** 외부(li.outerHTML 배열) 저장용은 유지 */
     @Transactional
+    @CacheEvict(value = "banners", allEntries = true)  // 캐시 무효화
     public List<JejuEvent> saveFromRawLiHtml(List<String> rawLis) {
         List<JejuEvent> saved = new ArrayList<>();
         for (String liHtml : rawLis) {
@@ -67,9 +71,32 @@ public class JejuEventCrawlerService {
         return saved;
     }
 
-    /** 지정 월(없으면 현재월)의 '한 페이지만' 크롤링하고 진행/예정만 저장 */
+    /**
+     * 지정 월(없으면 현재월)의 '한 페이지만' 크롤링하고 진행/예정만 저장
+     * Semaphore로 동시 실행 제어 - 최대 1개만 실행
+     * 크롤링 완료 후 배너 캐시 무효화
+     */
     @Transactional
+    @CacheEvict(value = "banners", allEntries = true)  // 캐시 무효화
     public List<JejuEvent> crawlSingleMonth(String monthNullable) throws Exception {
+        // Semaphore로 동시 실행 제어
+        boolean acquired = crawlerSemaphore.tryAcquire(3, TimeUnit.SECONDS);
+        if (!acquired) {
+            log.warn("[JejuEvent] Crawler already running, skipping this request");
+            throw new IllegalStateException("크롤러가 이미 실행 중입니다. 잠시 후 다시 시도해주세요.");
+        }
+
+        try {
+            log.info("[JejuEvent] Crawler semaphore acquired, starting crawl");
+            return performCrawl(monthNullable);
+        } finally {
+            crawlerSemaphore.release();
+            log.info("[JejuEvent] Crawler semaphore released");
+        }
+    }
+
+    /** 실제 크롤링 로직 (Semaphore 내부에서 실행) */
+    private List<JejuEvent> performCrawl(String monthNullable) throws Exception {
         List<JejuEvent> results = new ArrayList<>();
 
         // 월 파라미터 정규화 (MM)

@@ -44,3 +44,5 @@ out/
 /src/main/resources/firebase
 
 /.gradle
+*.lock
+*.bin
