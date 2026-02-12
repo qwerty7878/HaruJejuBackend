@@ -36,4 +36,11 @@ out/
 
 ### VS Code ###
 .vscode/
-/src/main/resources/firebase/jejuday.json
+
+*.class
+*.log
+/*.xml
+/src/main/resources/firebase
+
+/.gradle
+/logs
