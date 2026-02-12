@@ -1,6 +1,5 @@
 package com.goodda.jejuday.auth.dto.login.response;
 
-import com.goodda.jejuday.auth.entity.Language;
 import com.goodda.jejuday.auth.entity.Platform;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -21,7 +20,5 @@ public class LoginResponse {
     private String profile;
     private List<String> themes;
     private String birthYear;
-
-    private Language language;
     private Platform platform;
 }

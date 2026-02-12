@@ -37,17 +37,15 @@ import org.hibernate.annotations.CreationTimestamp;
 @Builder
 @Entity
 @Table(name = "users", indexes = {
-        @Index(name = "idx_email", columnList = "email")
+        @Index(name = "idx_email", columnList = "email"),
+        @Index(name = "idx_email_verified", columnList = "email, is_email_verified"),  // 추가
+        @Index(name = "idx_created_at", columnList = "created_at")  // 정리용
 })
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Long id;
-
-    @Builder.Default
-    @Column(name = "is_kakao_login", nullable = false)
-    private boolean isKakaoLogin = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "platform", length = 20, nullable = false)
@@ -57,11 +55,18 @@ public class User {
     @Column(name = "gender", length = 20, nullable = false)
     private Gender gender;
 
-    @Column(name = "name", length = 20, nullable = true)
-    private String name;
-
     @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
+
+    // 이메일 인증 여부 추가
+    @Builder.Default
+    @Column(name = "is_email_verified", nullable = false)
+    private boolean isEmailVerified = false;
+
+    // 계정 활성화 여부 (이메일 인증 + 프로필 완성 등)
+    @Builder.Default
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = false;
 
     @Column(name = "password", length = 255)
     private String password;
@@ -87,10 +92,6 @@ public class User {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "language", nullable = false)
-    private Language language;
 
     @Column(name = "fcm_token")
     private String fcmToken;

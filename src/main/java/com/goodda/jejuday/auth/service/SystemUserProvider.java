@@ -20,7 +20,7 @@ public class SystemUserProvider {
             .orElseGet(() -> {
                 User u = new User();
                 u.setEmail(props.getSystemUserEmail());
-                u.setName(props.getSystemUserName());
+                u.setNickname(props.getSystemUserName());
                 // 필요 기본값 세팅 (platform/role 등)
                 return userRepository.save(u);
             });
