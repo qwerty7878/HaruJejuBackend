@@ -1,4 +1,4 @@
-package com.goodda.jejuday.auth.config;
+package com.goodda.jejuday.common.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 

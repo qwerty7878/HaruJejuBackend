@@ -2,7 +2,6 @@ package com.goodda.jejuday.auth.dto.register.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.goodda.jejuday.auth.entity.Gender;
-import com.goodda.jejuday.auth.entity.Language;
 import com.goodda.jejuday.auth.entity.Platform;
 import com.goodda.jejuday.steps.entity.MoodGrade;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,7 +17,6 @@ public record ProfileResponse(
         String name,
         String nickname,
         String profile,
-        Language language,
         Platform platform,
         Gender gender,
         String birthYear,

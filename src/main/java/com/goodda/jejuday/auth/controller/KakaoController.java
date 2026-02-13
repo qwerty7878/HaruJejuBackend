@@ -4,7 +4,6 @@ import com.goodda.jejuday.auth.dto.ApiResponse;
 import com.goodda.jejuday.auth.dto.KakaoDTO;
 import com.goodda.jejuday.auth.dto.login.response.LoginResponse;
 import com.goodda.jejuday.auth.dto.register.request.KakaoFinalRegisterRequest;
-import com.goodda.jejuday.auth.entity.Language;
 import com.goodda.jejuday.auth.entity.User;
 import com.goodda.jejuday.auth.security.JwtService;
 import com.goodda.jejuday.auth.service.KakaoService;
@@ -24,7 +23,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -56,10 +54,6 @@ public class KakaoController {
             throw new IllegalArgumentException("등록되지 않은 이메일입니다. 회원가입을 먼저 진행해주세요.");
         }
 
-        if (!user.isKakaoLogin()) {
-            throw new IllegalArgumentException("일반 로그인 계정입니다. 이메일 로그인 API를 사용해주세요.");
-        }
-
         userService.setLoginCookie(response, user.getEmail());
         return ResponseEntity.ok(userService.loginResponse(user));
     }
@@ -74,7 +68,7 @@ public class KakaoController {
             String email = userDetails.getUsername();
             User user = userService.getUserByEmailOrNull(email);
 
-            if (user != null && user.isKakaoLogin()) {
+            if (user != null) {
                 userService.logoutUser(user.getId(), response); // FCM 토큰 제거
             }
         }
@@ -133,7 +127,6 @@ public class KakaoController {
                 profileImageUrl,
                 Set.copyOf(request.getThemes()),
                 request.getGender(),
-                Language.KOREAN,
                 request.getBirthYear(),
                 request.getReferrerNickname()
         );

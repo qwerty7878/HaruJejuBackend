@@ -1,24 +1,16 @@
 spring:
-#  output:
-#    ansi:
-#      enabled: always
-#  profiles:
-#    active: dev
   datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://dpg-d5mkqtd6ubrc73aa8s4g-a:5432/jejuday?sslmode=require
-    username: ${DATABASE_USER}
-    password: ${DATABASE_PASSWORD}
-#    url: jdbc:mysql://localhost:3306/jejuday?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-#    username: root
-#    password: 1120
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/jejuday
+    username: root
+    password: annhj116!
     hikari:
-      maximum-pool-size: 20          # 10 → 20으로 증가
+      maximum-pool-size: 10
       minimum-idle: 5
-      idle-timeout: 300000           # 5분
-      max-lifetime: 1200000          # 20분 (기존 30분에서 단축)
-      connection-timeout: 30000      # 30초
-      leak-detection-threshold: 5000 # 5초 (기존 2초에서 증가)
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 10000
+      leak-detection-threshold: 2000
 
   data:
     redis:
@@ -33,13 +25,12 @@ spring:
           time-between-eviction-runs: 5s
 
   jpa:
-    defer-datasource-initialization: true
     hibernate:
       ddl-auto: create
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
         jdbc:
           batch_size: 20
@@ -98,7 +89,7 @@ spring:
 
   # 스케줄링 활성화 (spring 하위로 이동)
   scheduling:
-    enabled: false
+    enabled: true
 
 # JWT 설정 (spring 밖으로 이동)
 jwt:
@@ -116,7 +107,7 @@ kakao:
     id: ${KAKAO_ID}
     secret: ${KAKAO_SECRET}
   redirect:
-    url: ${KAKAO_REDIRECT_URL_SERVER}x
+    url: ${KAKAO_REDIRECT_URL}
 
 # Firebase 설정
 firebase:
@@ -163,57 +154,39 @@ notification:
     connection-timeout: 5000
     read-timeout: 10000
 
-# 로깅 설정 (개발환경 최적화)
-logging:
-  level:
-    root: INFO
-    com.goodda.jejuday.notification: DEBUG  # 알림 시스템 디버깅
-    com.goodda.jejuday.steps: DEBUG         # 걸음수 시스템 디버깅 (추가)
-    com.google.firebase: WARN
-    org.springframework.data.redis: WARN
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    org.springframework.scheduling: INFO
-    org.springframework.transaction: INFO   # DEBUG → INFO로 변경 (로그 과다 방지)
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/jejuday-notification.log
-    max-size: 10MB
-    max-history: 30
-  
-  thymeleaf:
-    prefix: classpath:/templates/
-    suffix: .html
-    mode: HTML
-    encoding: UTF-8
-    cache: false
-    check-template-location: true
+## 로깅 설정 (개발환경 최적화)
+#logging:
+#  level:
+#    root: INFO
+#    com.goodda.jejuday.auth: DEBUG  # 인증 관련 로그
+#    org.springframework.mail: DEBUG  # 메일 관련 로그
+#    org.thymeleaf: DEBUG  # Thymeleaf 관련 로그
+#  pattern:
+#    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
-# 모니터링 설정
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus,scheduledtasks
-  endpoint:
-    health:
-      show-details: when-authorized
-      show-components: always
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-    enable:
-      jvm: true
-      system: true
-      process: true
+## 모니터링 설정
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,info,metrics,prometheus,scheduledtasks
+#  endpoint:
+#    health:
+#      show-details: when-authorized
+#      show-components: always
+#  metrics:
+#    export:
+#      prometheus:
+#        enabled: true
+#    enable:
+#      jvm: true
+#      system: true
+#      process: true
 
 # 성능 튜닝 설정
 server:
   address: 0.0.0.0
-  port: ${PORT:8080}
+  port: 8080  # 포트 명시 (추가)
   tomcat:
     threads:
       max: 200
@@ -225,14 +198,3 @@ app:
   cookie:
     same-site: Lax        # dev
     secure: false
-  redis:
-    enabled: false   # true 로 바꾸면 Redis 캐시 사용
-  system-user-email: system@yourapp.local
-  system-user-name: System
-
-tourapi:
-  base-url: https://apis.data.go.kr
-  service-key: ${TOUR_API_KEY}
-  korservice-path: /B551011/KorService2
-  system-user-id: 1
-

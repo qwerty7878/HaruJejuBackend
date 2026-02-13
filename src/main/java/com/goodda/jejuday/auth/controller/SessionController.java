@@ -4,7 +4,6 @@ import com.goodda.jejuday.auth.dto.ApiResponse;
 import com.goodda.jejuday.auth.dto.login.response.LoginStatusResponse;
 import com.goodda.jejuday.auth.dto.register.response.ProfileResponse;
 import com.goodda.jejuday.auth.dto.register.response.UserSummaryResponse;
-import com.goodda.jejuday.auth.entity.Language;
 import com.goodda.jejuday.auth.entity.User;
 import com.goodda.jejuday.auth.entity.UserTheme;
 import com.goodda.jejuday.auth.repository.UserRepository;
@@ -15,7 +14,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -53,7 +51,7 @@ public class SessionController {
 
         LoginStatusResponse ok = LoginStatusResponse.builder()
                 .authenticated(true)
-                .provider(user.isKakaoLogin() ? "KAKAO" : "APP")
+//                .provider(user.getPlatform() ? "KAKAO" : "APP")
                 .userId(user.getId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
@@ -85,7 +83,6 @@ public class SessionController {
                 .name(null)
                 .nickname(user.getNickname())
                 .profile(user.getProfile())
-                .language(user.getLanguage()) // 하드코딩 제거
                 .platform(user.getPlatform())
                 .gender(user.getGender())
                 .birthYear(user.getBirthYear())
@@ -110,10 +107,8 @@ public class SessionController {
                 .name(null)
                 .nickname(u.getNickname())
                 .platform(u.getPlatform())
-                .kakaoLogin(u.isKakaoLogin())
                 .gender(u.getGender())
                 .birthYear(u.getBirthYear())
-                .language(u.getLanguage())
                 .createdAt(u.getCreatedAt())
                 .hallabong(u.getHallabong())
                 .totalSteps(u.getTotalSteps())

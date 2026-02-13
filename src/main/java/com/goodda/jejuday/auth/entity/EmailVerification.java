@@ -1,21 +1,11 @@
 package com.goodda.jejuday.auth.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -23,37 +13,55 @@ import org.hibernate.annotations.OnDeleteAction;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "email_verification")
+@Table(name = "email_verification", indexes = {
+        @Index(name = "idx_email", columnList = "email"),
+        @Index(name = "idx_user_id", columnList = "user_id"),
+        @Index(name = "idx_expires_at", columnList = "expires_at")
+})
 public class EmailVerification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "temporary_user_id", referencedColumnName = "temporary_user_id")
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private TemporaryUser temporaryUser;
-
-    // 비밀번호 찾기 시 User와 연관 (OneToMany 관계)
-    @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "user_id")
+    // 비밀번호 재설정 시 User와 연관
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
-    // 회원가입 시 임시 사용자 없이 이메일 인증을 위한 필드 추가
-    @Column(name = "email", length = 100)
+    // 회원가입 또는 비밀번호 재설정 시 이메일
+    @Column(name = "email", nullable = false, length = 100)
     private String email;
 
     @Column(name = "verification_code", nullable = false, length = 6)
     private String verificationCode;
 
+    @Builder.Default
     @Column(name = "is_verified", nullable = false)
-    private boolean isVerified;
+    private boolean isVerified = false;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "verification_type", nullable = false, length = 20)
+    private VerificationType verificationType;
+
+    @Builder.Default
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
+
+    @Column(name = "verified_at")
+    private LocalDateTime verifiedAt;
+
+    // 편의 메서드
+    public boolean isExpired() {
+        return LocalDateTime.now().isAfter(expiresAt);
+    }
+
+    public void markAsVerified() {
+        this.isVerified = true;
+        this.verifiedAt = LocalDateTime.now();
+    }
 }

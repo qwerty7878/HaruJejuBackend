@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FinalAppRegisterResponse {
+public class SignUpResponse {
     private Long userId;
     private String email;
     private String nickname;
