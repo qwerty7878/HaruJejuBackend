@@ -46,3 +46,4 @@ out/
 /.gradle
 *.lock
 *.bin
+/logs
