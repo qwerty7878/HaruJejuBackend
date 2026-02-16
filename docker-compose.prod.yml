@@ -121,32 +121,3 @@ services:
       retries: 3
       start_period: 90s
     restart: unless-stopped
-
-  # ======================
-  # Nginx 리버스 프록시
-  # ======================
-  nginx:
-    image: nginx:alpine
-    container_name: harujehu-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /home/ubuntu/harujeju/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /home/ubuntu/harujeju/logs/nginx:/var/log/nginx
-      # SSL 인증서 (Let's Encrypt 사용 시)
-      # - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      - app
-    networks:
-      - harujeju-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-    restart: unless-stopped
-
-networks:
-  harujeju-network:
-    driver: bridge
