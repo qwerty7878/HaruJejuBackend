@@ -101,6 +101,14 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          
+          # SSH 연결 유지 설정 추가
+          cat >> ~/.ssh/config << 'SSH_CONFIG'
+          Host *
+            ServerAliveInterval 60
+            ServerAliveCountMax 10
+            TCPKeepAlive yes
+          SSH_CONFIG
 
       # 3. 환경변수 파일 생성
       - name: 📝 Create .env file
@@ -225,5 +233,6 @@ jobs:
           echo "### ❌ Deployment Failed - Rollback Initiated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The deployment script automatically rolled back to the previous version." >> $GITHUB_STEP_SUMMARY
+
 
 
