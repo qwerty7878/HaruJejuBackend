@@ -3,7 +3,7 @@ name: Deploy to AWS EC2
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch:  # 수동 실행 가능
+  workflow_dispatch:
 
 env:
   DOCKER_IMAGE_NAME: harujeju-backend
@@ -15,18 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # 1. 코드 체크아웃
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      # 2. JDK 21 설정
       - name: ☕ Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      # 3. Gradle 캐싱
       - name: 📦 Cache Gradle packages
         uses: actions/cache@v3
         with:
@@ -37,14 +34,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 4. Gradle 빌드
       - name: 🔨 Build with Gradle
         run: |
           chmod +x gradlew
           ./gradlew clean build -x test --no-daemon
           echo "✅ Build completed successfully"
 
-      # 5. 빌드 결과 확인
       - name: 📊 Check build artifact
         run: |
           ls -lh build/libs/
@@ -52,18 +47,15 @@ jobs:
           echo "JAR_FILE=${JAR_FILE}" >> $GITHUB_ENV
           echo "Built JAR: ${JAR_FILE}"
 
-      # 6. Docker Buildx 설정
       - name: 🐳 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 7. Docker Hub 로그인
       - name: 🔐 Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 8. Docker 이미지 빌드 & 푸시
       - name: 🚀 Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -76,7 +68,6 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_HUB_REPO }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_HUB_REPO }}:buildcache,mode=max
 
-      # 9. 빌드 결과 출력
       - name: 📋 Output build info
         run: |
           echo "### 🐳 Docker Build Success" >> $GITHUB_STEP_SUMMARY
@@ -90,123 +81,161 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # 1. 코드 체크아웃
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      # 2. SSH 키 설정
       - name: 🔑 Configure SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          cat > ~/.ssh/id_rsa << 'EOF_KEY'
+          ${{ secrets.EC2_SSH_KEY }}
+          EOF_KEY
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
           
-          # SSH 연결 유지 설정 추가
-          cat >> ~/.ssh/config << 'SSH_CONFIG'
+          # SSH 연결 유지 설정
+          cat >> ~/.ssh/config << 'EOF_CONFIG'
           Host *
             ServerAliveInterval 60
             ServerAliveCountMax 10
             TCPKeepAlive yes
-          SSH_CONFIG
+          EOF_CONFIG
+          chmod 600 ~/.ssh/config
+          echo "✅ SSH key configured"
 
-      # 3. 환경변수 파일 생성
+      - name: 🧪 Test SSH connection
+        run: |
+          ssh -o ConnectTimeout=10 -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo '✅ SSH connection successful'"
+
       - name: 📝 Create .env file
         run: |
           cat > .env.prod << EOF
           # Docker Image
           DOCKER_IMAGE=${{ env.DOCKER_HUB_REPO }}:latest
           
-          # Database (MySQL 컨테이너 이름 사용)
+          # Database
           DB_USERNAME=${{ secrets.DB_USERNAME }}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           
           # JWT
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           
-          # AWS S3 (선택사항)
+          # AWS S3
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_S3_BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }}
           AWS_REGION=ap-northeast-2
           
-          # Kakao OAuth (선택사항)
+          # Kakao OAuth
           KAKAO_ID=${{ secrets.KAKAO_ID }}
           KAKAO_SECRET=${{ secrets.KAKAO_SECRET }}
           KAKAO_REDIRECT_URL=${{ secrets.KAKAO_REDIRECT_URL }}
           
-          # Mail (선택사항)
+          # Mail
           SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }}
           EOF
 
-      # 🆕 디렉토리 생성 단계 추가
       - name: 📁 Create directories on EC2
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            mkdir -p ~/harujeju/logs/{app,mysql,nginx,redis}
+            mkdir -p ~/harujeju/logs/{app,mysql,redis}
             mkdir -p ~/harujeju/volumes/{mysql,redis}
-            mkdir -p ~/harujeju/nginx
-            mkdir -p ~/harujeju/init-sql
-            echo "✅ Directories created successfully"
+            echo "✅ Directories created"
           EOF
 
-      # 4. 파일 전송
       - name: 📤 Transfer files to EC2
         run: |
           scp -i ~/.ssh/id_rsa .env.prod ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/harujeju/.env
           scp -i ~/.ssh/id_rsa docker-compose.prod.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/harujeju/docker-compose.yml
-      
-      # 5. EC2에서 배포 실행
+
       - name: 🚀 Deploy on EC2
+        timeout-minutes: 10
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -o ServerAliveInterval=60 \
+              -o ServerAliveCountMax=10 \
+              -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
             
-            cd /home/${{ secrets.EC2_USER }}/harujeju
+            cd ~/harujeju
             
             echo "================================"
             echo "🚀 Starting deployment..."
             echo "================================"
             
-            # 기존 컨테이너 중지
-            docker-compose down || true
+            # 기존 컨테이너 정리
+            echo "Stopping old containers..."
+            docker-compose down --remove-orphans || true
+            
+            # 오래된 이미지 정리
+            echo "Cleaning old images..."
+            docker image prune -af || true
             
             # 최신 이미지 pull
+            echo "Pulling latest images..."
             docker-compose pull
             
             # 컨테이너 시작
+            echo "Starting containers..."
             docker-compose up -d
             
-            # 정리
-            docker image prune -af
+            # 컨테이너 시작 대기 (최대 5분)
+            echo "Waiting for containers to be healthy..."
+            TIMEOUT=300
+            ELAPSED=0
+            INTERVAL=10
             
-            # 상태 확인
-            docker-compose ps
+            while [ $ELAPSED -lt $TIMEOUT ]; do
+              MYSQL_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' harujeju-mysql 2>/dev/null || echo "starting")
+              REDIS_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' harujeju-redis 2>/dev/null || echo "starting")
+              
+              if [ "$MYSQL_HEALTH" = "healthy" ] && [ "$REDIS_HEALTH" = "healthy" ]; then
+                echo "✅ Database services are healthy!"
+                
+                if docker ps | grep -q harujeju-app; then
+                  echo "✅ Application is running!"
+                  break
+                fi
+              fi
+              
+              echo "[$ELAPSED/$TIMEOUT] Waiting... MySQL: $MYSQL_HEALTH, Redis: $REDIS_HEALTH"
+              sleep $INTERVAL
+              ELAPSED=$((ELAPSED + INTERVAL))
+            done
             
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "❌ Deployment timeout!"
+              docker-compose ps
+              docker-compose logs app --tail=50
+              exit 1
+            fi
+            
+            # 최종 상태 확인
             echo "================================"
             echo "✅ Deployment completed!"
             echo "================================"
+            docker-compose ps
           EOF
 
-      # 6. 헬스체크
       - name: 🏥 Health check
+        timeout-minutes: 5
         run: |
-          echo "Waiting for application to start..."
-          sleep 30
+          echo "Waiting for application to be ready..."
+          sleep 20
           
-          for i in {1..10}; do
+          for i in {1..20}; do
             if curl -f http://${{ secrets.EC2_HOST }}:8080/actuator/health > /dev/null 2>&1; then
               echo "✅ Application is healthy!"
               exit 0
             fi
-            echo "Attempt $i/10: Waiting..."
-            sleep 10
+            echo "Attempt $i/20: Waiting..."
+            sleep 15
           done
           
           echo "❌ Health check failed!"
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+            "cd ~/harujeju && docker-compose logs app --tail=100"
           exit 1
 
-      # 7. 배포 결과 알림
       - name: 📢 Deployment notification
         if: success()
         run: |
@@ -228,11 +257,8 @@ jobs:
     if: failure()
     
     steps:
-      - name: 🔙 Rollback deployment
+      - name: 🔙 Rollback notification
         run: |
-          echo "### ❌ Deployment Failed - Rollback Initiated" >> $GITHUB_STEP_SUMMARY
+          echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The deployment script automatically rolled back to the previous version." >> $GITHUB_STEP_SUMMARY
-
-
-
+          echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
