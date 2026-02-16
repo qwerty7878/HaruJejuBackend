@@ -147,8 +147,7 @@ jobs:
         run: |
           scp -i ~/.ssh/id_rsa .env.prod ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/harujeju/.env
           scp -i ~/.ssh/id_rsa docker-compose.prod.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/harujeju/docker-compose.yml
-          scp -i ~/.ssh/id_rsa scripts/deploy-ec2.sh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/harujeju/deploy.sh
-
+      
       # 5. EC2에서 배포 실행
       - name: 🚀 Deploy on EC2
         run: |
@@ -161,11 +160,20 @@ jobs:
             echo "🚀 Starting deployment..."
             echo "================================"
             
-            # 실행 권한 부여
-            chmod +x deploy.sh
+            # 기존 컨테이너 중지
+            docker-compose down || true
             
-            # 배포 스크립트 실행
-            ./deploy.sh
+            # 최신 이미지 pull
+            docker-compose pull
+            
+            # 컨테이너 시작
+            docker-compose up -d
+            
+            # 정리
+            docker image prune -af
+            
+            # 상태 확인
+            docker-compose ps
             
             echo "================================"
             echo "✅ Deployment completed!"
@@ -217,4 +225,5 @@ jobs:
           echo "### ❌ Deployment Failed - Rollback Initiated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The deployment script automatically rolled back to the previous version." >> $GITHUB_STEP_SUMMARY
+
 
