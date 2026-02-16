@@ -131,6 +131,17 @@ jobs:
           SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }}
           EOF
 
+      # 🆕 디렉토리 생성 단계 추가
+      - name: 📁 Create directories on EC2
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            mkdir -p ~/harujeju/logs/{app,mysql,nginx,redis}
+            mkdir -p ~/harujeju/volumes/{mysql,redis}
+            mkdir -p ~/harujeju/nginx
+            mkdir -p ~/harujeju/init-sql
+            echo "✅ Directories created successfully"
+          EOF
+
       # 4. 파일 전송
       - name: 📤 Transfer files to EC2
         run: |
@@ -206,3 +217,4 @@ jobs:
           echo "### ❌ Deployment Failed - Rollback Initiated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The deployment script automatically rolled back to the previous version." >> $GITHUB_STEP_SUMMARY
+
